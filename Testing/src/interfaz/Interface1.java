@@ -69,7 +69,7 @@ public class Interface1 extends javax.swing.JFrame {
         
         // also do an initial immediate update
         updateTerminatedArea();
-        startSchedulerBackground();
+        startSchedulerThread();
     }
 
     private void setupScrollContainers() {
@@ -173,16 +173,24 @@ public class Interface1 extends javax.swing.JFrame {
         refreshSuspendedBlockedList(suspendedBlocked);
     }
     
+    
     /**
      * Generic refresh helper to rebuild a container from a Cola (queue) that stores PCB objects.
-     * This rebuilds the whole container (removeAll + add each item) and schedules UI updates on the EDT.
+     * This rebuilds the whole container (removeAll + add each item) using an atomic snapshot.
      */
     private void refreshContainerFromQueue(final Cola queue, final JPanel container, final JScrollPane pane) {
-        // Ensure we're updating UI on the Event Dispatch Thread
+        if (queue == null || container == null) {
+            return;
+        }
+
+        // Take an atomic snapshot off the shared queue to avoid concurrent modification problems
+        final Object[] items = queue.snapshot();
+
+        // Now perform all UI updates on the EDT
         javax.swing.SwingUtilities.invokeLater(() -> {
             container.removeAll();
 
-            if (queue == null || queue.getCount() < 1) {
+            if (items == null || items.length == 0) {
                 container.revalidate();
                 container.repaint();
                 if (pane != null) {
@@ -192,8 +200,8 @@ public class Interface1 extends javax.swing.JFrame {
                 return;
             }
 
-            for (int i = 0; i < queue.getCount(); i++) {
-                Object o = queue.get(i);
+            for (int i = 0; i < items.length; i++) {
+                Object o = items[i];
                 if (o == null) continue;
 
                 PCB pcb;
@@ -210,8 +218,6 @@ public class Interface1 extends javax.swing.JFrame {
                 }
 
                 PanelProceso p = new PanelProceso(pcb.getMar(), pcb.getPc(), pcb.getId(), pcb.getName(), pcb.getStatus());
-                // allow horizontal stretching so all panels align
-               // p.setMaximumSize(new Dimension(Integer.MAX_VALUE, p.getPreferredSize().height));
                 container.add(p);
                 container.add(Box.createRigidArea(new Dimension(0, 8)));
             }
@@ -629,11 +635,11 @@ public class Interface1 extends javax.swing.JFrame {
                 .addComponent(jLabel11)
                 .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane6, GroupLayout.PREFERRED_SIZE, 30, GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jLabel6)
                 .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane1, GroupLayout.PREFERRED_SIZE, 58, GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(18, Short.MAX_VALUE))
+                .addContainerGap(14, Short.MAX_VALUE))
         );
 
         panel2.setBackground(new Color(201, 255, 238));
@@ -891,7 +897,7 @@ public class Interface1 extends javax.swing.JFrame {
                             .addGroup(sim_panelLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
                                 .addComponent(global_clock1, GroupLayout.PREFERRED_SIZE, 54, GroupLayout.PREFERRED_SIZE)
                                 .addComponent(generate_processes, GroupLayout.PREFERRED_SIZE, 24, GroupLayout.PREFERRED_SIZE)))))
-                .addContainerGap(38, Short.MAX_VALUE))
+                .addContainerGap(16, Short.MAX_VALUE))
         );
 
         selection.addTab("Simulación", sim_panel);
@@ -996,7 +1002,7 @@ public class Interface1 extends javax.swing.JFrame {
                 .addGroup(config_panelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
                     .addComponent(panel5, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
                     .addComponent(panel4, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(502, Short.MAX_VALUE))
+                .addContainerGap(470, Short.MAX_VALUE))
         );
 
         selection.addTab("Configuración", config_panel);
@@ -1007,7 +1013,7 @@ public class Interface1 extends javax.swing.JFrame {
             .addGap(0, 1361, Short.MAX_VALUE)
         );
         graphics_panelLayout.setVerticalGroup(graphics_panelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGap(0, 685, Short.MAX_VALUE)
+            .addGap(0, 688, Short.MAX_VALUE)
         );
 
         selection.addTab("Gráficos", graphics_panel);
@@ -1018,7 +1024,7 @@ public class Interface1 extends javax.swing.JFrame {
             .addComponent(selection)
         );
         layout.setVerticalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addComponent(selection)
+            .addComponent(selection, GroupLayout.DEFAULT_SIZE, 723, Short.MAX_VALUE)
         );
 
         pack();

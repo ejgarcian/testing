@@ -406,7 +406,7 @@ public class Scheduler {
 
                     // Compare processing time and swap underlying list if out of order
                     if (p1.getProcessingTime() > p2.getProcessingTime()) {
-                        readyQueue.getQueue().swap(i, i + 1);
+                        readyQueue.swap(i, i + 1); // will notify listeners
                         swapped = true;
                     }
                 }
@@ -453,7 +453,7 @@ public class Scheduler {
             while (j < n){
                 PCB aux2 = (PCB)readyQueue.get(j);
                 if (aux.getPriorityFSS()>aux2.getPriorityFSS()){
-                    readyQueue.getQueue().swap(i, j);
+                    readyQueue.swap(i, j);
                 }
                 j++;
             }
@@ -501,7 +501,7 @@ public class Scheduler {
                 PCB aux2 = (PCB)readyQueue.get(j);
                 if (aux.getPriorityFSS() > aux2.getPriorityFSS()){
 
-                    readyQueue.getQueue().swap(i, j);
+                    readyQueue.swap(i, j);
 
                 }
                 j++;

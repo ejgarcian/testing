@@ -2,6 +2,10 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
 package edd;
 
 /**
@@ -20,7 +24,7 @@ public class Cola {
      * 
      * @param j Objeto a encolar
      */
-    public void enqueue(Object j) {
+    public synchronized void enqueue(Object j) {
         getQueue().add(j);
         notifyListeners();
     }
@@ -31,7 +35,7 @@ public class Cola {
      * 
      * @return Primer elemento de la cola
      */
-    public Object dequeue() {
+    public synchronized Object dequeue() {
         if (getQueue().count() > 0) {
             Object value = getQueue().get(0);
             getQueue().remove(0);
@@ -46,7 +50,7 @@ public class Cola {
      * 
      * @return Cantidad de elementos encolados en la cola actual
      */
-    public int getCount() {
+    public synchronized int getCount() {
         return getQueue().count();
     }
 
@@ -56,7 +60,7 @@ public class Cola {
      * @param index Posición del objeto dentro de la cola
      * @return Objeto según la posición
      */
-    public Object get(int index) {
+    public synchronized Object get(int index) {
         return getQueue().get(index);
     }
 
@@ -69,7 +73,7 @@ public class Cola {
         return queue;
     }
     
-    public boolean getContains(Object value) {
+    public synchronized boolean getContains(Object value) {
         return getQueue().contains(value);
     }
     
@@ -80,7 +84,7 @@ public class Cola {
      *
      * @param l the listener to add (ignored if null)
      */
-    public void addListener(QueueChangeListener l) {
+    public synchronized void addListener(QueueChangeListener l) {
         if (l == null) return;
         // avoid duplicates (simple linear scan)
         for (int i = 0; i < listeners.count(); i++) {
@@ -97,7 +101,7 @@ public class Cola {
      *
      * @param l the listener to remove (ignored if not found or null)
      */
-    public void removeListener(QueueChangeListener l) {
+    public synchronized void removeListener(QueueChangeListener l) {
         if (l == null) return;
         int n = listeners.count();
         for (int i = 0; i < n; i++) {
@@ -112,6 +116,7 @@ public class Cola {
 
     /**
      * Notify all registered listeners that this queue changed.
+     * Note: keep private but expose fireChange() for controlled public triggering.
      */
     private void notifyListeners() {
         int n = listeners.count();
@@ -129,13 +134,21 @@ public class Cola {
             }
         }
     }
+
+    /**
+     * Public method to trigger listeners when external code manipulates the
+     * internal Lista directly (use sparingly). Prefer using Cola APIs instead.
+     */
+    public synchronized void fireChange() {
+        notifyListeners();
+    }
     
     /**
      * Remove item at index (wraps Lista.remove) and notifies listeners.
      *
      * @param index index to remove
      */
-    public void removeAt(int index) {
+    public synchronized void removeAt(int index) {
         getQueue().remove(index);
         notifyListeners();
     }
@@ -147,7 +160,7 @@ public class Cola {
      * @param value value to remove
      * @return true if removed
      */
-    public boolean removeValue(Object value) {
+    public synchronized boolean removeValue(Object value) {
         if (value == null) return false;
         // search for equality by scanning
         int n = getQueue().count();
@@ -159,11 +172,36 @@ public class Cola {
                 return true;
             } else {
                 // also support matching by PCB id / Proceso equality cases
-                // Lista.indexOf already handles some comparisons; use it if present
-                // but keep the explicit scan above for general objects
             }
         }
         return false;
+    }
+
+    /**
+     * Swap two indices in the internal Lista and notify listeners.
+     * This is a thread-safe wrapper around Lista.swap().
+     *
+     * @param i first index
+     * @param j second index
+     */
+    public synchronized void swap(int i, int j) {
+        getQueue().swap(i, j);
+        notifyListeners();
+    }
+
+    /**
+     * Take an atomic snapshot of the current queue contents and return as an Object[].
+     * Use this for safe UI iteration.
+     *
+     * @return array copy of current elements (never null)
+     */
+    public synchronized Object[] snapshot() {
+        int n = getQueue().count();
+        Object[] arr = new Object[n];
+        for (int i = 0; i < n; i++) {
+            arr[i] = getQueue().get(i);
+        }
+        return arr;
     }
 
 }

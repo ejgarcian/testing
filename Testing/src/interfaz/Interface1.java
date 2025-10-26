@@ -460,6 +460,7 @@ public class Interface1 extends javax.swing.JFrame {
     }
     
     private void startUiRefreshTimer() {
+        startSchedulerThread();
         if (uiRefreshTimer != null && uiRefreshTimer.isRunning()) return;
         uiRefreshTimer = new javax.swing.Timer(1000, e -> {
             // Take a short synchronized snapshot of the model
@@ -1064,7 +1065,12 @@ public class Interface1 extends javax.swing.JFrame {
     private void save_policyActionPerformed(ActionEvent evt) {//GEN-FIRST:event_save_policyActionPerformed
         // TODO add your handling code here:
         planification = planification_choose.getSelectedIndex();
-        startSchedulerBackground();
+        
+        if (schedulerThread == null || !schedulerThread.isAlive()){
+            startSchedulerThread();
+        } else {
+            //schedulerThread.interrupt();
+        }
     }//GEN-LAST:event_save_policyActionPerformed
 
     private void create_processActionPerformed(ActionEvent evt) {//GEN-FIRST:event_create_processActionPerformed

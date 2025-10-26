@@ -31,6 +31,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.LayoutStyle;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.WindowConstants;
 
@@ -41,7 +42,7 @@ import javax.swing.WindowConstants;
 public class Interface1 extends javax.swing.JFrame {
 
     private OS operativeSystem = new OS(4000);
-    private Timer terminatedTimer;
+    private Timer terminatedTimer, timeTimer;
     private int planification;
     private boolean isSchedulerActive = false;
     private Thread schedulerThread;
@@ -65,16 +66,23 @@ public class Interface1 extends javax.swing.JFrame {
         
         // start a Swing Timer to refresh terminated list every 1 second (1000 ms)
         terminatedTimer = new Timer(1000, e -> {
-            //time++;
-            //global_clock.setText(String.valueOf(time));
-            //global_clock.revalidate();
-            //global_clock.repaint();
-            updateTerminatedArea();
             
+            updateTerminatedArea();
             }
         );
         terminatedTimer.setRepeats(true);
         terminatedTimer.start();
+        
+        timeTimer = new Timer(1000, e -> {
+            
+            time++;
+                global_clock.setText(String.valueOf(time));
+                global_clock.revalidate();
+                global_clock.repaint();
+            }
+        );
+        timeTimer.setRepeats(true);
+        timeTimer.start();
         
         startSchedulerThread();
     }
@@ -895,7 +903,7 @@ public class Interface1 extends javax.swing.JFrame {
                         .addComponent(jLabel4)
                         .addGap(7, 7, 7)
                         .addComponent(jScrollPane5, GroupLayout.PREFERRED_SIZE, 125, GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
+                        .addGap(20, 20, 20)
                         .addComponent(jLabel7)
                         .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jScrollPane2, GroupLayout.PREFERRED_SIZE, 125, GroupLayout.PREFERRED_SIZE)
@@ -915,7 +923,7 @@ public class Interface1 extends javax.swing.JFrame {
                             .addGroup(sim_panelLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
                                 .addComponent(global_clock1, GroupLayout.PREFERRED_SIZE, 54, GroupLayout.PREFERRED_SIZE)
                                 .addComponent(generate_processes, GroupLayout.PREFERRED_SIZE, 24, GroupLayout.PREFERRED_SIZE)))))
-                .addContainerGap(16, Short.MAX_VALUE))
+                .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         selection.addTab("Simulación", sim_panel);
@@ -1020,7 +1028,7 @@ public class Interface1 extends javax.swing.JFrame {
                 .addGroup(config_panelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
                     .addComponent(panel5, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
                     .addComponent(panel4, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(470, Short.MAX_VALUE))
+                .addContainerGap(471, Short.MAX_VALUE))
         );
 
         selection.addTab("Configuración", config_panel);
@@ -1031,7 +1039,7 @@ public class Interface1 extends javax.swing.JFrame {
             .addGap(0, 1361, Short.MAX_VALUE)
         );
         graphics_panelLayout.setVerticalGroup(graphics_panelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGap(0, 688, Short.MAX_VALUE)
+            .addGap(0, 689, Short.MAX_VALUE)
         );
 
         selection.addTab("Gráficos", graphics_panel);
@@ -1042,7 +1050,7 @@ public class Interface1 extends javax.swing.JFrame {
             .addComponent(selection)
         );
         layout.setVerticalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addComponent(selection, GroupLayout.DEFAULT_SIZE, 723, Short.MAX_VALUE)
+            .addComponent(selection, GroupLayout.DEFAULT_SIZE, 724, Short.MAX_VALUE)
         );
 
         pack();

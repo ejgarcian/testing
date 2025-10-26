@@ -224,7 +224,8 @@ public class Scheduler {
     
     
     public void Feedback(int setQuantum, Cola readyQueue, Lista readyQueueList, Dispatcher dispatcher, Cola blockedQueue, Lista terminatedProcessList) {
-        System.out.println("sssssssswqdqwfqfqfqfqfq");
+        reorganiceFeedback(readyQueue, readyQueueList);
+        //System.out.println("sssssssswqdqwfqfqfqfqfq");
         int quantum = setQuantum;
         if (Thread.currentThread().isInterrupted()) return;
 
@@ -691,12 +692,14 @@ public class Scheduler {
     
     public void accessDevice(Proceso blockedProcess, Dispatcher dispatcher, Cola blockedQueue){
         int i = 0;
+        Device aux = null;
         while (i < deviceTable.count()){
             if (Thread.currentThread().isInterrupted()) return;
             if (blockedProcess.getDeviceToUse() == ((Device)deviceTable.get(i)).getId()){
+                aux = ((Device)deviceTable.get(i));
                 try {
                     System.out.println("accediendo al device");
-                    ((Device)deviceTable.get(i)).getSemaf().acquire();
+                    aux.getSemaf().acquire();
                 } catch(InterruptedException e) {
                     Thread.currentThread().interrupt();
                     return;
@@ -707,7 +710,7 @@ public class Scheduler {
         }
         try {
             blockedProcess.sleep(blockedProcess.getSatisfyCicles()*1000);
-            ((Device)deviceTable.get(i)).getSemaf().release();
+            aux.getSemaf().release();
             dispatcher.deactivate(blockedProcess);
             blockedQueue.getQueue().remove(blockedQueue.getQueue().indexOf(blockedProcess.getPcb()));
         } 

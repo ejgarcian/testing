@@ -28,7 +28,7 @@
     </DimensionLayout>
     <DimensionLayout dim="1">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Component id="selection" alignment="0" max="32767" attributes="0"/>
+          <Component id="selection" alignment="0" pref="724" max="32767" attributes="0"/>
       </Group>
     </DimensionLayout>
   </Layout>
@@ -106,7 +106,7 @@
                               <Component id="jLabel4" min="-2" max="-2" attributes="0"/>
                               <EmptySpace min="-2" pref="7" max="-2" attributes="0"/>
                               <Component id="jScrollPane5" min="-2" pref="125" max="-2" attributes="0"/>
-                              <EmptySpace type="separate" max="-2" attributes="0"/>
+                              <EmptySpace min="-2" pref="20" max="-2" attributes="0"/>
                               <Component id="jLabel7" min="-2" max="-2" attributes="0"/>
                               <EmptySpace type="unrelated" max="-2" attributes="0"/>
                               <Component id="jScrollPane2" min="-2" pref="125" max="-2" attributes="0"/>
@@ -131,7 +131,7 @@
                               </Group>
                           </Group>
                       </Group>
-                      <EmptySpace pref="16" max="32767" attributes="0"/>
+                      <EmptySpace max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -652,7 +652,7 @@
                           <Component id="panel5" min="-2" max="-2" attributes="0"/>
                           <Component id="panel4" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace pref="470" max="32767" attributes="0"/>
+                      <EmptySpace pref="471" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -830,7 +830,7 @@
             </DimensionLayout>
             <DimensionLayout dim="1">
               <Group type="103" groupAlignment="0" attributes="0">
-                  <EmptySpace min="0" pref="688" max="32767" attributes="0"/>
+                  <EmptySpace min="0" pref="689" max="32767" attributes="0"/>
               </Group>
             </DimensionLayout>
           </Layout>

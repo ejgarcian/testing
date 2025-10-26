@@ -1,0 +1,140 @@
+public void addProcessToSystem(Proceso process){
+    
+        if (operativeSystem.canBeReady(process) == true){
+            operativeSystem.getReadyQueue().enqueue(process.getPcb());
+        } else {
+            operativeSystem.getLongTermQueue().enqueue(process.getPcb());
+        }
+        
+        Lista aux = operativeSystem.getProcessList();
+        aux.add(process);
+        operativeSystem.setProcessList(aux);
+        
+        /*
+         * Persist the created process to the JSON configuration:
+         * - Ensure setConfig is initialized (load from file or create new)
+         * - Convert current setConfig.processes (PData[]) into a PDataList
+         * - Append the new PData built from 'process'
+         * - Save the updated Config back to disk using JsonManager.saveConfigToJson(...)
+         *
+         * Note: java.util.* is not used anywhere here; only arrays and the provided PDataList.
+         */
+        PData pd = new PData(
+            process.getName(),
+            process.getBound(),
+            process.getInstructions(),
+            process.getIoCicles(),
+            process.getSatisfyCicles(),
+            process.getDeviceToUse(),
+            process.getPriority()
+        );
+
+        // Load existing config if we don't have it yet
+        if (setConfig == null) {
+            setConfig = JsonManager.loadConfigFromJson();
+        }
+
+        if (setConfig == null) {
+            // No config on disk: create a fresh one using current quantum as cycleDuration
+            PDataList newList = new PDataList(4);
+            newList.add(pd);
+            setConfig = new Config(operativeSystem.getQuantum(), newList);
+        } else {
+            // Existing config found: convert its array to PDataList, append and set back
+            PData[] existing = setConfig.getProcesses();
+            int initialCapacity = (existing == null) ? 4 : existing.length + 1;
+            PDataList list = new PDataList(initialCapacity);
+            if (existing != null) {
+                for (int i = 0; i < existing.length; i++) {
+                    PData e = existing[i];
+                    if (e != null) {
+                        list.add(e);
+                    }
+                }
+            }
+            list.add(pd);
+            setConfig.setProcesses(list.toArray());
+        }
+
+        // Persist the updated configuration
+        JsonManager.saveConfigToJson(setConfig);
+
+        System.out.println("Processssos: "+operativeSystem.getProcessList().count());
+    }
+
+
+
+
+
+
+    import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.File;
+import java.io.IOException;
+
+/**
+ *
+ * @author Eddy
+ */
+public class JsonManager {
+
+    private static final String FILE_PATH = "config.json";
+    
+    // --- Lógica para GUARDAR el JSON ---
+    public static void saveConfigToJson(Config config) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            // Usa el módulo de "pretty printing" para formatear el JSON con indentación
+            mapper.writerWithDefaultPrettyPrinter().writeValue(new File(FILE_PATH), config);
+            System.out.println("✅ Configuración guardada en: " + FILE_PATH);
+        } catch (IOException e) {
+            System.err.println("❌ Error al guardar la configuración JSON: " + e.getMessage());
+        }
+    }
+
+    // --- Lógica para CARGAR el JSON ---
+    public static Config loadConfigFromJson() {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            File file = new File(FILE_PATH);
+            if (!file.exists()) {
+                System.out.println("⚠️ Archivo de configuración no encontrado. Creando configuración por defecto...");
+                Config defaultConfig = createDefaultConfig();
+                if (defaultConfig != null) {
+                    saveConfigToJson(defaultConfig); 
+                }
+                return defaultConfig;
+            }
+            
+            Config config = mapper.readValue(file, Config.class);
+            System.out.println("✅ Configuración cargada exitosamente desde: " + FILE_PATH);
+            return config;
+        } catch (IOException e) {
+            System.err.println("❌ Error al cargar/parsear el archivo JSON: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    public void setProcessesFromArray(PData[] array) {
+        
+    }
+    
+    // --- Creación de Configuración por Defecto (usando arrays) ---
+    private static Config createDefaultConfig() {
+        int cycleDuration = 20;
+
+        // Define default processes using PDataList (no java.util usage)
+        PDataList defaultList = new PDataList(4);
+
+        defaultList.add(new PData("P_CPU_1", "CPU", 10, 0, 0, 0, 1));
+        defaultList.add(new PData("P_IO_1", "I/O", 25, 100, 50, 2, 2));
+        defaultList.add(new PData("P_IO_2", "I/O", 10, 200, 75, 1, 3));
+        defaultList.add(new PData("P_CPU_2", "CPU", 20, 0, 0, 0, 1));
+
+        Config config = new Config(cycleDuration, defaultList);
+        return config;
+    }
+}
+
+
+
+

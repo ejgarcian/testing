@@ -1,3 +1,5 @@
+// Replace the existing canBeReady implementation with this corrected version
+public boolean canBeReady(Proceso process){
     // compute potential remaining space without mutating state
     int potential = getRemainingSpace() - process.getMemorySpace();
 

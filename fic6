@@ -1,0 +1,53 @@
+// inside updateActualProcess() replace the synchronized block with the read lock:
+private void updateActualProcess() {
+    if (show_actual == null) return;
+
+    String txt = "";
+    try {
+        // use read lock to get a consistent snapshot
+        operativeSystem.readLock().lock();
+        try {
+            if (operativeSystem != null && operativeSystem.getProcessList().count() > 0) {
+                Proceso active = operativeSystem.getDispatcher().getActiveProcess(operativeSystem.getProcessList());
+                if (active != null && active.getPcb() != null) {
+                    PCB pcb = active.getPcb();
+                    String name = pcb.getName();
+                    txt = name == null ? "" : name;
+                } else {
+                    txt = "";
+                }
+            }
+        } finally {
+            operativeSystem.readLock().unlock();
+        }
+    } catch (Exception ex) {
+        System.err.println("updateActualProcess error: " + ex);
+        txt = "";
+    }
+    show_actual.setText(txt);
+    show_actual.revalidate();
+    show_actual.repaint();
+}
+
+// and if you implement the polling Timer as suggested earlier, do the same locking
+private void startUiRefreshTimer() {
+    if (uiRefreshTimer != null && uiRefreshTimer.isRunning()) return;
+    uiRefreshTimer = new javax.swing.Timer(300, e -> {
+        // take a small read-lock snapshot:
+        operativeSystem.readLock().lock();
+        try {
+            refreshReadyList(operativeSystem.getReadyQueue());
+            refreshBlockedList(operativeSystem.getBlockedQueue());
+            refreshSuspendedReadyList(operativeSystem.getSuspendedReadyQueue());
+            refreshSuspendedBlockedList(operativeSystem.getSuspendedBlockedQueue());
+            updateTerminatedArea();
+            updateActualProcess();
+        } finally {
+            operativeSystem.readLock().unlock();
+        }
+    });
+    uiRefreshTimer.setCoalesce(true);
+    uiRefreshTimer.start();
+}
+
+

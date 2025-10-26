@@ -24,6 +24,7 @@ public class PCB {
         this.name = name;
         this.pc = 0;
         this.mar = 0;
+        this.timesIn = 0;
     }
 
     public String getStatus() {

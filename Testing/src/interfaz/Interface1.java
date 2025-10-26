@@ -41,11 +41,10 @@ import javax.swing.WindowConstants;
 public class Interface1 extends javax.swing.JFrame {
 
     private OS operativeSystem = new OS(4000);
-    private Timer uiRefreshTimer;
+    private Timer terminatedTimer;
     private int planification;
     private boolean isSchedulerActive = false;
     private Thread schedulerThread;
-    int time = 0;
    // private Lista devices = operativeSystem.getDeviceTable();    //---> No creo que sea necesario, se accede directamente a lo que está dentro del sistema operativo
    // private Lista processList = operativeSystem.getProcessList();
     
@@ -64,7 +63,13 @@ public class Interface1 extends javax.swing.JFrame {
         registerQueueListeners(); 
         
         // start a Swing Timer to refresh terminated list every 1 second (1000 ms)
-        startUiRefreshTimer();
+        terminatedTimer = new Timer(1000, e -> updateTerminatedArea());
+        terminatedTimer.setRepeats(true);
+        terminatedTimer.start();
+        
+        // also do an initial immediate update
+        updateTerminatedArea();
+        startSchedulerThread();
     }
 
     private void setupScrollContainers() {
@@ -425,7 +430,9 @@ public class Interface1 extends javax.swing.JFrame {
         show_terminated.setText(txt);
         show_terminated.revalidate();
         show_terminated.repaint();
-        global_clock.setText(String.valueOf(time));
+        
+        updateActualProcess();
+        global_clock.setText(terminatedTimer.toString());
     }
     
     /**
@@ -457,25 +464,6 @@ public class Interface1 extends javax.swing.JFrame {
         show_actual.setText(txt);
         show_actual.revalidate();
         show_actual.repaint();
-    }
-    
-    private void startUiRefreshTimer() {
-        startSchedulerThread();
-        if (uiRefreshTimer != null && uiRefreshTimer.isRunning()) return;
-        uiRefreshTimer = new javax.swing.Timer(1000, e -> {
-            // Take a short synchronized snapshot of the model
-            synchronized (operativeSystem) {
-                refreshReadyList(operativeSystem.getReadyQueue());
-                refreshBlockedList(operativeSystem.getBlockedQueue());
-                refreshSuspendedReadyList(operativeSystem.getSuspendedReadyQueue());
-                refreshSuspendedBlockedList(operativeSystem.getSuspendedBlockedQueue());
-                updateTerminatedArea();
-                updateActualProcess();
-                time++;
-            }
-        });
-        uiRefreshTimer.setCoalesce(true);
-        uiRefreshTimer.start();
     }
 
     private void startSchedulerBackground() {
@@ -1065,12 +1053,7 @@ public class Interface1 extends javax.swing.JFrame {
     private void save_policyActionPerformed(ActionEvent evt) {//GEN-FIRST:event_save_policyActionPerformed
         // TODO add your handling code here:
         planification = planification_choose.getSelectedIndex();
-        
-        if (schedulerThread == null || !schedulerThread.isAlive()){
-            startSchedulerThread();
-        } else {
-            //schedulerThread.interrupt();
-        }
+        startSchedulerBackground();
     }//GEN-LAST:event_save_policyActionPerformed
 
     private void create_processActionPerformed(ActionEvent evt) {//GEN-FIRST:event_create_processActionPerformed

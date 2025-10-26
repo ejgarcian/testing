@@ -44,7 +44,7 @@ import json.PData;
  */
 public class Interface1 extends javax.swing.JFrame {
 
-    private OS operativeSystem = new OS(4000);
+    private OS operativeSystem = new OS(4000, 1);
     private Timer terminatedTimer, timeTimer;
     private int planification;
     private boolean isSchedulerActive = false;
@@ -92,6 +92,8 @@ public class Interface1 extends javax.swing.JFrame {
         timeTimer.setRepeats(true);
         timeTimer.start();
         
+        cicle_duration.setText(String.valueOf(operativeSystem.getQuantum()));
+                
         initGraphicsCharts();
         
         startSchedulerThread();
@@ -453,17 +455,13 @@ public class Interface1 extends javax.swing.JFrame {
         
         Lista aux = operativeSystem.getProcessList();
         aux.add(process);
-        
         operativeSystem.setProcessList(aux);
-        /*
-        System.out.println(operativeSystem.getReadyQueue().getCount());
-        System.out.println(operativeSystem.getSuspendedReadyQueue().getCount());*/
+        
+        System.out.println("Processssos: "+operativeSystem.getProcessList().count());
     }
     
     // FOR TESTING 
     public void runQuickAddDemo() {
-        
-    javax.swing.SwingUtilities.invokeLater(() -> {
         
         Config config = JsonManager.loadConfigFromJson();
     
@@ -475,6 +473,7 @@ public class Interface1 extends javax.swing.JFrame {
         int cycleDuration = config.getCycleDurationMs();
 
         operativeSystem.setQuantum(cycleDuration);
+        cicle_duration.setText(String.valueOf(operativeSystem.getQuantum()));
 
         for (PData pd : config.getProcesses()) {
                 Proceso newProcess = new Proceso(
@@ -489,6 +488,10 @@ public class Interface1 extends javax.swing.JFrame {
                 );
                 addProcessToSystem(newProcess);
         }
+        
+    javax.swing.SwingUtilities.invokeLater(() -> {
+        
+        
         
         // create test Proceso objects using the same constructor you already used in create_processActionPerformed
         // Adjust arguments to match your Proceso constructor if needed

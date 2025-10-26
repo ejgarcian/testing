@@ -26,7 +26,7 @@ public class OS {
     private Cola suspendedBlockedQueue = new Cola();
     private Lista terminatedProcessList = new Lista();
     private int currentPlanification = 0;
-    private int quantum = 3;
+    private int quantum;
 
     
     
@@ -45,7 +45,7 @@ public class OS {
         return getReadyQueue();
     }
 
-    public OS(int memorySpace) {
+    public OS(int memorySpace, int quantum) {
         Device first = new Device(0);
         Device second = new Device(1);
         Device third = new Device(2);
@@ -55,6 +55,7 @@ public class OS {
         deviceTable.add(third);
         
         this.scheduler = new Scheduler(processList, memorySpace, deviceTable);
+        this.quantum = quantum;
         
     }
     

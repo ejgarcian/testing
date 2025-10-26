@@ -701,7 +701,8 @@ public class Scheduler {
         int i = 0;
         Device aux = null;
         while (i < deviceTable.count()){
-            System.out.println("entroo");
+            System.out.println("entroo"
+                    + "");
             if (Thread.currentThread().isInterrupted()) return;
             Object o = deviceTable.get(i);
             if (!(o instanceof Device)) { i++; continue; }

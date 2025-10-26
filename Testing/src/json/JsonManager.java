@@ -39,9 +39,9 @@ public class JsonManager {
             File file = new File(FILE_PATH);
             if (!file.exists()) {
                 System.out.println("⚠️ Archivo de configuración no encontrado. Creando configuración por defecto...");
-                //Config defaultConfig = createDefaultConfig();
-                //saveConfigToJson(defaultConfig); 
-                //return defaultConfig;
+                Config defaultConfig = createDefaultConfig();
+                saveConfigToJson(defaultConfig); 
+                return defaultConfig;
             }
             
             Config config = mapper.readValue(file, Config.class);
@@ -52,7 +52,7 @@ public class JsonManager {
             return null;
         }
     }
-    /*
+    
     // --- Creación de Configuración por Defecto (usando arrays) ---
     private static Config createDefaultConfig() {
         int cycleDuration = 50; 
@@ -67,5 +67,5 @@ public class JsonManager {
         };
         
         return new Config(cycleDuration, defaultProcesses);
-    }*/
+    }
 }

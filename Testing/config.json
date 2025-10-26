@@ -3,7 +3,7 @@
   "processes" : [ {
     "name" : "P_CPU_1",
     "bound" : "CPU",
-    "instructions" : 500,
+    "instructions" : 10,
     "ioCicles" : 0,
     "satisfyCicles" : 0,
     "deviceToUse" : 0,
@@ -11,7 +11,7 @@
   }, {
     "name" : "P_IO_1",
     "bound" : "I/O",
-    "instructions" : 300,
+    "instructions" : 25,
     "ioCicles" : 100,
     "satisfyCicles" : 50,
     "deviceToUse" : 2,
@@ -19,7 +19,7 @@
   }, {
     "name" : "P_IO_2",
     "bound" : "I/O",
-    "instructions" : 450,
+    "instructions" : 10,
     "ioCicles" : 200,
     "satisfyCicles" : 75,
     "deviceToUse" : 1,
@@ -27,7 +27,7 @@
   }, {
     "name" : "P_CPU_2",
     "bound" : "CPU",
-    "instructions" : 800,
+    "instructions" : 20,
     "ioCicles" : 0,
     "satisfyCicles" : 0,
     "deviceToUse" : 0,

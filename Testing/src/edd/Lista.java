@@ -49,23 +49,22 @@ public class Lista {
      * Función para obtener un elemento según su índice dentro de la lista
      *
      * @param index Índice del elemento a retornar
-     * @return Elemento encontrado según su índice
+     * @return Elemento encontrado según su índice (o null si fuera de rango)
      */
     public Object get(int index) {
-        if (index == 0) {
-            if (this.value != null) {
-                return this.value.getValue();
-            } else {
-                return null;
+        if (index < 0) return null;
+        Lista current = this;
+        int i = 0;
+        // Walk nodes until we find the index or run out of nodes
+        while (current != null && current.value != null) {
+            if (i == index) {
+                return current.value.getValue();
             }
-        } else {
-            index--;
-            if (this.next != null){
-                return this.next.get(index);
-            } else {
-                return null;
-            }
+            current = current.next;
+            i++;
         }
+        // index out of range
+        return null;
     }
 
     /**
@@ -74,7 +73,7 @@ public class Lista {
      * @param index Indice del elemento a eliminar
      */
     public void remove(int index) {
-        if (index >= 0 && index < count) {
+        if (index >= 0 && index < count()) {
             if (index == 0) {
 
                 if (this.next == null) {
@@ -114,17 +113,16 @@ public class Lista {
      * @return Cantidad de elementos de la lista
      */
     public int count() {
-        if (this.value == null) {
-            return 0;
-        } 
-        
-        if (this.next == null) {
-            return 1;
-        } else if (this.next == null){
-        } else {
-            return 1 + this.next.count();
-        } 
-        return 0;
+        // Iterative, defensive count that walks nodes with non-null ElementoLista.value
+        int cnt = 0;
+        Lista current = this;
+        while (current != null && current.value != null) {
+            cnt++;
+            current = current.next;
+        }
+        // Keep the internal count field in sync (defensive)
+        this.count = cnt;
+        return cnt;
     }
 
     /**
@@ -135,9 +133,9 @@ public class Lista {
      */
     public void addRange(Lista h) {
 
-        if (h.count > 0) {
+        if (h.count() > 0) {
             Lista actual = h;
-            while (actual.next != null && actual.value != null) {
+            while (actual != null && actual.value != null) {
 
                 if (!this.contains(actual.value.getValue())) {
                     this.add(actual.value.getValue());
@@ -153,8 +151,9 @@ public class Lista {
         String txt = "";
         
         for (int i = 0; i < count(); i++) {
-            if ((Proceso)get(i)!= null) {
-                txt = txt + ((Proceso)get(i)).getName() + "\n";
+            Object o = get(i);
+            if (o instanceof Proceso) {
+                txt = txt + ((Proceso)o).getName() + "\n";
             }
         }
         return txt;
@@ -170,17 +169,17 @@ public class Lista {
      * false.
      */
     public boolean contains(Object value) {
-
-        if (this.value != null && this.value.getValue().equals(value)) {
-            return true;
-        } else if (this.next != null) {
-            return this.next.contains(value);
-        } else {
-            return false;
+        if (value == null) return false;
+        Lista current = this;
+        while (current != null && current.value != null) {
+            Object v = current.value.getValue();
+            if (v == value || (v != null && v.equals(value))) return true;
+            current = current.next;
         }
+        return false;
     }
 
-/**
+ /**
     /*
     /**
      
@@ -188,28 +187,29 @@ public class Lista {
     @param value Objeto a encontrar.
     @return Posición correspondiente al elemento en la lista.*/
     public int indexOf(Object value) {
-        Object aux = this.value.getValue();
-
-            if (this.value != null && (value instanceof PCB) && ((PCB)aux).getId() == ((PCB)value).getId()) {
-                return this.value.getIndex();
-            } else if (this.value != null && (value instanceof Device) && ((Device)aux).getId() == ((Device)value).getId()){
-                return this.value.getIndex();
-            } else if (this.value != null && (value instanceof Proceso) && ((Proceso)aux).getPcb().getId() == ((Proceso)value).getPcb().getId()) {
-                return this.value.getIndex();
-            }else {
-                if (this.next != null) {
-                    return this.next.indexOf(value);
-                } else {
-                    return -1;
-                }
+        if (value == null) return -1;
+        Lista current = this;
+        while (current != null && current.value != null) {
+            Object aux = current.value.getValue();
+            if ((value instanceof PCB) && (aux instanceof PCB) && ((PCB)aux).getId() == ((PCB)value).getId()) {
+                return current.value.getIndex();
+            } else if ((value instanceof Device) && (aux instanceof Device) && ((Device)aux).getId() == ((Device)value).getId()){
+                return current.value.getIndex();
+            } else if ((value instanceof Proceso) && (aux instanceof Proceso) && ((Proceso)aux).getPcb().getId() == ((Proceso)value).getPcb().getId()) {
+                return current.value.getIndex();
+            } else if (aux == value || (aux != null && aux.equals(value))) {
+                return current.value.getIndex();
             }
+            current = current.next;
+        }
+        return -1;
     }
     
     private Lista getNodeAt(int index) {
-        if (index < 0 || index >= count()) return null;
+        if (index < 0) return null;
         Lista current = this;
         int i = 0;
-        while (i < index) {
+        while (current != null && current.value != null && i < index) {
             current = current.next;
             i++;
         }
@@ -267,5 +267,4 @@ public class Lista {
         // update count to match number of non-null values (defensive)
         this.count = idx;
     }
-    
 }

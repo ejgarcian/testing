@@ -1,0 +1,78 @@
+// Replace your current refreshContainerFromQueue(...) implementation with this version
+private void refreshContainerFromQueue(final Cola queue, final JPanel container, final JScrollPane pane) {
+    if (queue == null || container == null) return;
+
+    // Ensure UI update happens on EDT
+    SwingUtilities.invokeLater(new Runnable() {
+        @Override
+        public void run() {
+            container.removeAll();
+
+            // Take a snapshot to avoid iterating while queue may change
+            Object[] items = queue.snapshot();
+            for (Object item : items) {
+                if (item == null) continue;
+
+                // If it is a PCB and it's terminated, skip rendering it
+                if (item instanceof PCB) {
+                    PCB pcb = (PCB) item;
+                    if ("terminated".equals(pcb.getStatus())) {
+                        continue; // hide terminated pcbs from queue views
+                    }
+                }
+
+                // If you previously expected Proceso objects, try to find the Proceso
+                // from the PCB; otherwise render directly from PCB data.
+                Proceso proceso = null;
+                if (item instanceof PCB) {
+                    // try to find the corresponding Proceso instance from scheduler
+                    if (operativeSystem != null && operativeSystem.getScheduler() != null) {
+                        proceso = operativeSystem.getScheduler().findProcessByPCB((PCB) item);
+                    }
+                } else if (item instanceof Proceso) {
+                    proceso = (Proceso) item;
+                }
+
+                // If we have a Proceso instance, use existing addPanelProceso(Proceso)
+                if (proceso != null) {
+                    addPanelProceso(proceso);
+                } else {
+                    // Otherwise create a small panel from PCB fields (so the UI still shows something)
+                    if (item instanceof PCB) {
+                        PCB pcb = (PCB) item;
+                        javax.swing.JPanel p = new javax.swing.JPanel();
+                        p.setLayout(new java.awt.BorderLayout());
+                        String title = String.format("ID: %d  Name: %s  Status: %s", pcb.getId(), pcb.getName(), pcb.getStatus());
+                        javax.swing.JLabel lbl = new javax.swing.JLabel(title);
+                        p.add(lbl, java.awt.BorderLayout.CENTER);
+                        p.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                                javax.swing.BorderFactory.createLineBorder(new java.awt.Color(153, 153, 153), 1),
+                                javax.swing.BorderFactory.createEmptyBorder(8, 8, 8, 8)
+                        ));
+                        container.add(p);
+                    } else {
+                        // If item is of unknown type, render its toString()
+                        javax.swing.JPanel p = new javax.swing.JPanel();
+                        p.setLayout(new java.awt.BorderLayout());
+                        javax.swing.JLabel lbl = new javax.swing.JLabel(String.valueOf(item));
+                        p.add(lbl, java.awt.BorderLayout.CENTER);
+                        p.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                                javax.swing.BorderFactory.createLineBorder(new java.awt.Color(153, 153, 153), 1),
+                                javax.swing.BorderFactory.createEmptyBorder(8, 8, 8, 8)
+                        ));
+                        container.add(p);
+                    }
+                }
+            }
+
+            // revalidate/repaint so JScrollPane updates
+            container.revalidate();
+            container.repaint();
+
+            if (pane != null) {
+                pane.revalidate();
+                pane.repaint();
+            }
+        }
+    });
+}

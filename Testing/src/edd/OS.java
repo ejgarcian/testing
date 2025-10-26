@@ -46,9 +46,9 @@ public class OS {
     }
 
     public OS(int memorySpace) {
-        Device first = new Device(1);
-        Device second = new Device(2);
-        Device third = new Device(3);
+        Device first = new Device(0);
+        Device second = new Device(1);
+        Device third = new Device(2);
         
         deviceTable.add(first);
         deviceTable.add(second);
@@ -70,7 +70,6 @@ public class OS {
             System.out.println("si");
             return true;
         } else {
-            process.getPcb().setStatus("suspendedReady");
             System.out.println("no");
             return false;
         }

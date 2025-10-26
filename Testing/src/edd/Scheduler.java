@@ -30,71 +30,73 @@ public class Scheduler {
     public void RoundRobin (int setQuantum, Cola readyQueue, Dispatcher dispatcher, Cola blockedQueue, Lista terminatedProcessList){
         int quantum = setQuantum;
          
-        if (readyQueue.getCount() <= 0){
-            return;
-        }
+        if (readyQueue.getCount() > 0){
 
-        // Extraer el próximo PCB de la cola (FIFO)
-        Object dequeued = readyQueue.dequeue();
-        if (!(dequeued instanceof PCB)) {
-            return;
-        }
-        PCB pcbOfActiveProcess = (PCB) dequeued;
-
-        // activar si no está corriendo
-        if (!"running".equals(pcbOfActiveProcess.getStatus())){
-            dispatcher.activate(pcbOfActiveProcess, getProcessList()); // ready ---> running
-        }
-        
-        Proceso toRun = dispatcher.getActiveProcess(getProcessList());
-        if (toRun == null) return;
-
-        // Ciclo de ejecución controlado por el scheduler (quantum y condiciones de I/O/terminación)
-        while("running".equals(toRun.getPcb().getStatus())) {
-            // honor interruption from the scheduler thread (UI changed planification)
-            if (Thread.currentThread().isInterrupted()) return;
-
-            // Si ya consumió su quantum o terminó -> desactivar y salir del tick
-            if (toRun.getTimeSpent() >= quantum || toRun.getProcessingTime() <= toRun.getTotalTimeSpent()){
-                dispatcher.deactivate(toRun);   // running --> ready
-                break;
+            var processToActivate = readyQueue.dequeue();
+            if (!(processToActivate instanceof PCB)) {
+                // defensive: if the queue didn't contain a PCB, nothing to do
+                return;
+            }
+            PCB pcbOfActiveProcess = (PCB) processToActivate;
+            
+            // verificar si el proceso ya está activado y si no lo está, activarlo   
+            if (!"running".equals(pcbOfActiveProcess.getStatus())){
+                dispatcher.activate(pcbOfActiveProcess, getProcessList()); // ready ---> running
             }
             
-            // Si debe bloquearse por I/O lo movemos a blocked
-            if ("I/O Bound".equals(toRun.getBound()) && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
-                toRun.getPcb().setStatus("blocked");
-                blockedQueue.enqueue(toRun.getPcb());
+            Proceso toRun = dispatcher.getActiveProcess(getProcessList());
+            if (toRun == null) return;
+            
+            while(toRun != null && "running".equals(toRun.getPcb().getStatus())) {
+                // honor interruption from the scheduler thread (UI changed planification)
+                if (Thread.currentThread().isInterrupted()) return;
+
+                System.out.println("is running");
+                if (toRun.getTimeSpent() >= quantum || toRun.getProcessingTime() <= toRun.getTotalTimeSpent()){
+                    dispatcher.deactivate(toRun);   // running --> ready
+                    // after deactivate the PCB status should be "ready"
+                }
+            
+                if ("I/O Bound".equals(toRun.getBound()) && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
+                    // transition to blocked: set status explicitly, then enqueue only if status is "blocked"
+                    toRun.getPcb().setStatus("blocked");
+                    if ("blocked".equals(toRun.getPcb().getStatus())) {
+                        blockedQueue.enqueue(toRun.getPcb());
+                    }
+                    try {
+                        toRun.sleep(toRun.getIoCicles()*1000);
+                        System.out.println("ssssswqdwqdq");
+                        accessDevice(toRun, dispatcher, blockedQueue);
+                    } 
+                    catch(InterruptedException e) {
+                         // honor interruption — propagate by setting the interrupted flag and return
+                         Thread.currentThread().interrupt();
+                         return;
+                    }                
+                }                
                 try {
-                    Thread.sleep((long)toRun.getIoCicles()*1000);
-                    accessDevice(toRun, dispatcher, blockedQueue);
+                    Thread.sleep(1000);
                 } 
                 catch(InterruptedException e) {
+                     // honor interruption — set flag and return
                      Thread.currentThread().interrupt();
                      return;
-                }                
-            }                
-            try {
-                Thread.sleep(1000);
-            } 
-            catch(InterruptedException e) {
-                 Thread.currentThread().interrupt();
-                 return;
+                }
             }
-        }
-        // gestionar resultado (terminado o reencolar)
-        if (toRun.getProcessingTime() <= toRun.getTotalTimeSpent()) {
-            toRun.getPcb().setStatus("terminated");
-            // Wake up the thread if it's waiting so it can finish cleanly
-            try {
-                synchronized (toRun) { toRun.notify(); } 
-            } catch (IllegalMonitorStateException ignored) {}
-            try { toRun.interrupt(); } catch (SecurityException ignored) {}
-            terminatedProcessList.add(toRun);
-            // asegurarnos de que no quede referencia en ready
-            readyQueue.removeValue(toRun.getPcb());
-        } else {
-            // Reinsertar al final de la cola
-            readyQueue.enqueue(toRun.getPcb());
+
+            // When the process finished its quantum / execution we must enqueue it back
+            // only if its PCB status is "ready" (or handle termination).
+            if (toRun.getProcessingTime() <= toRun.getTotalTimeSpent()) {
+                toRun.getPcb().setStatus("terminated");
+                terminatedProcessList.add(toRun);
+            } else {
+                if ("ready".equals(toRun.getPcb().getStatus())) {
+                    readyQueue.enqueue(toRun.getPcb());
+                } else {
+                    // If it's not ready (for example blocked), do not enqueue into ready queue.
+                    System.out.println("Not enqueuing to ready queue because status is: " + toRun.getPcb().getStatus());
+                }
+            }
         }
     }
     
@@ -154,6 +156,7 @@ public class Scheduler {
     
     public void PriorityPlanification(int quantum, Cola readyQueue, Dispatcher dispatcher, Lista priorityList, Cola blockedQueue, Lista terminatedProcessList){
         // Recorremos las colas de prioridad en orden (0 = mayor prioridad)
+        reorganicePriorityPlanification(readyQueue, priorityList);
         for (int i = 0; i < priorityList.count(); i++){
             // check interruption on top of loops
             if (Thread.currentThread().isInterrupted()) return;
@@ -223,41 +226,27 @@ public class Scheduler {
     
     
     public void Feedback(int setQuantum, Cola readyQueue, Lista readyQueueList, Dispatcher dispatcher, Cola blockedQueue, Lista terminatedProcessList) {
+        reorganiceFeedback(readyQueue, readyQueueList);
+        //System.out.println("sssssssswqdqwfqfqfqfqfq");
         int quantum = setQuantum;
         if (Thread.currentThread().isInterrupted()) return;
 
         PCB processToActivate = null;
-        Cola chosenBucket = null;
-
         // Buscar el primer bucket no vacío (nivel de mayor prioridad)
-        for (int i = 0; i < readyQueueList.count(); i++) {
-            Object bucketObj = readyQueueList.get(i);
-            if (!(bucketObj instanceof Cola)) continue;
-            Cola bucket = (Cola) bucketObj;
-            if (bucket.getCount() > 0) {
-                Object dequeued = bucket.dequeue();
-                if (dequeued == null) continue;
-                // dequeued puede ser PCB (o Proceso). Normalizar
-                if (dequeued instanceof Proceso) {
-                    processToActivate = ((Proceso)dequeued).getPcb();
-                } else if (dequeued instanceof PCB) {
-                    processToActivate = (PCB)dequeued;
-                } else {
-                    continue;
-                }
-                chosenBucket = bucket;
+        int i = 0;
+        while (i < readyQueueList.count()){
+            if (((Cola)readyQueueList.get(i)).getCount() > 0){
+                System.out.println("activando");
+                processToActivate = (PCB)(((Cola)readyQueueList.get(i)).dequeue());
+                System.out.println("id del proceso" + processToActivate.getId());
+                dispatcher.activate(processToActivate, processList);
+                System.out.println("status del pta" + processToActivate.getStatus());
+                readyQueue.getQueue().remove(readyQueue.getQueue().indexOf(processToActivate));
                 break;
             }
+            i++;
         }
-
-        if (processToActivate == null) return;
-
-        // Activar el proceso seleccionado
-        dispatcher.activate(processToActivate, processList);
-
-        // Eliminar cualquier referencia residual en la cola global
-        readyQueue.removeValue(processToActivate);
-
+        
         Proceso toRun = dispatcher.getActiveProcess(processList);
         if (toRun == null) return;
         if (Thread.currentThread().isInterrupted()) return;
@@ -299,6 +288,10 @@ public class Scheduler {
             int timesIn = toRun.getPcb().getTimesIn();
             if (timesIn < readyQueueList.count()) {
                 Object obj = readyQueueList.get(timesIn);
+                ((Cola) obj).enqueue(toRun.getPcb());
+                readyQueue.enqueue(toRun.getPcb());
+                
+                /*
                 if (obj instanceof Cola) {
                     ((Cola) obj).enqueue(toRun.getPcb());
                     readyQueue.enqueue(toRun.getPcb());
@@ -307,10 +300,12 @@ public class Scheduler {
                     readyQueueList.add(aux);
                     aux.enqueue(toRun.getPcb());
                     readyQueue.enqueue(toRun.getPcb());
-                }
+                }*/
+                
             } else {
                 Cola aux = new Cola();
                 readyQueueList.add(aux);
+                System.out.println(timesIn);
                 ((Cola) readyQueueList.get(timesIn)).enqueue(toRun.getPcb());
                 readyQueue.enqueue(toRun.getPcb());
             }
@@ -331,7 +326,9 @@ public class Scheduler {
                 if (Thread.currentThread().isInterrupted()) return;
 
                 if (toRun.getTimeSpent() >= quantum || toRun.getProcessingTime() <= toRun.getTotalTimeSpent()){
-                    dispatcher.deactivate(toRun);   // running --> ready
+                    dispatcher.deactivate(toRun);
+                    recalculateFSS(readyQueue, toRun.getPcb().getPriority());
+                    reorganiceFSS(readyQueue);// running --> ready
                 }
                 if ("I/O Bound".equals(toRun.getBound()) && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
                     toRun.getPcb().setStatus("blocked");
@@ -696,13 +693,24 @@ public class Scheduler {
     
     
     public void accessDevice(Proceso blockedProcess, Dispatcher dispatcher, Cola blockedQueue){
+        if (blockedProcess == null) {
+            System.err.println("accessDevice: blockedProcess is null");
+            return;
+        }
+
         int i = 0;
+        Device aux = null;
         while (i < deviceTable.count()){
+            System.out.println("entroo");
             if (Thread.currentThread().isInterrupted()) return;
-            if (blockedProcess.getDeviceToUse() == ((Device)deviceTable.get(i)).getId()){
+            Object o = deviceTable.get(i);
+            if (!(o instanceof Device)) { i++; continue; }
+            Device dev = (Device) o;
+            if (blockedProcess.getDeviceToUse() == dev.getId()){
+                aux = dev;
                 try {
-                    System.out.println("accediendo al device");
-                    ((Device)deviceTable.get(i)).getSemaf().acquire();
+                    System.out.println("accediendo al device id=" + dev.getId());
+                    aux.getSemaf().acquire();
                 } catch(InterruptedException e) {
                     Thread.currentThread().interrupt();
                     return;
@@ -711,11 +719,27 @@ public class Scheduler {
             }
             i++;
         }
+
+        if (aux == null) {
+            // No matching device found — log and return safely
+            System.err.println("accessDevice: no device found with id " + blockedProcess.getDeviceToUse());
+            return;
+        }
+
         try {
-            blockedProcess.sleep(blockedProcess.getSatisfyCicles()*1000);
-            ((Device)deviceTable.get(i)).getSemaf().release();
-            dispatcher.deactivate(blockedProcess);
-            blockedQueue.getQueue().remove(blockedQueue.getQueue().indexOf(blockedProcess.getPcb()));
+            // Use Thread.sleep (static) — same effect as blockedProcess.sleep(...)
+            Thread.sleep((long) blockedProcess.getSatisfyCicles() * 1000L);
+            aux.getSemaf().release();
+
+            // deactivate thread (safe null-check)
+            if (dispatcher != null) {
+                dispatcher.deactivate(blockedProcess);
+            }
+
+            // Remove the PCB from blockedQueue using the public API (safer)
+            if (blockedQueue != null) {
+                blockedQueue.removeValue(blockedProcess.getPcb());
+            }
         } 
         catch(InterruptedException e) {
              Thread.currentThread().interrupt();

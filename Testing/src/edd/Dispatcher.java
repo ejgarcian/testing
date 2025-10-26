@@ -51,14 +51,16 @@ public class Dispatcher {
         for (int i = 0; i < n; i++) {
             Object o = procesos.get(i);
             if (!(o instanceof Proceso)) continue;
-            Proceso p = (Proceso) o;
-            PCB pcb = p.getPcb();
-            if (pcb == null) continue;
+                Proceso p = (Proceso) o;
+                PCB pcb = p.getPcb();
+                if (pcb == null) continue;
             // use .equals to compare string content (safer than ==)
             if ("running".equals(pcb.getStatus())) {
                 return p;
             }
         }
+        
+        //System.out.println(procesos.printListProcess());
         return null;
     }
 }

@@ -31,6 +31,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.LayoutStyle;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.WindowConstants;
 import json.Config;
@@ -44,10 +45,11 @@ import json.PData;
 public class Interface1 extends javax.swing.JFrame {
 
     private OS operativeSystem = new OS(4000);
-    private Timer terminatedTimer;
+    private Timer terminatedTimer, timeTimer;
     private int planification;
     private boolean isSchedulerActive = false;
     private Thread schedulerThread;
+    int time;
    // private Lista devices = operativeSystem.getDeviceTable();    //---> No creo que sea necesario, se accede directamente a lo que está dentro del sistema operativo
    // private Lista processList = operativeSystem.getProcessList();
     
@@ -66,12 +68,25 @@ public class Interface1 extends javax.swing.JFrame {
         registerQueueListeners(); 
         
         // start a Swing Timer to refresh terminated list every 1 second (1000 ms)
-        terminatedTimer = new Timer(1000, e -> updateTerminatedArea());
+        terminatedTimer = new Timer(1000, e -> {
+            
+            updateTerminatedArea();
+            }
+        );
         terminatedTimer.setRepeats(true);
         terminatedTimer.start();
         
-        // also do an initial immediate update
-        updateTerminatedArea();
+        timeTimer = new Timer(1000, e -> {
+            
+            time++;
+                global_clock.setText(String.valueOf(time));
+                global_clock.revalidate();
+                global_clock.repaint();
+            }
+        );
+        timeTimer.setRepeats(true);
+        timeTimer.start();
+        
         startSchedulerThread();
     }
 
@@ -232,15 +247,19 @@ public class Interface1 extends javax.swing.JFrame {
                 pane.repaint();
             }
         });
+       
     }
 
     // Convenience methods to refresh specific queues
     public void refreshReadyList(Cola readyQueue) {
         refreshContainerFromQueue(readyQueue, readyContainer, jScrollPane3);
+        System.out.println("Ready: "+readyQueue.getCount());
     }
 
     public void refreshBlockedList(Cola blockedQueue) {
         refreshContainerFromQueue(blockedQueue, blockedContainer, jScrollPane5);
+        System.out.println("Blocked: "+blockedQueue.getCount());
+        System.out.println("Procesos: "+operativeSystem.getProcessList().count());
     }
 
     public void refreshSuspendedReadyList(Cola suspendedReadyQueue) {
@@ -341,7 +360,7 @@ public class Interface1 extends javax.swing.JFrame {
         if (operativeSystem.canBeReady(process) == true){
             operativeSystem.getReadyQueue().enqueue(process.getPcb());
         } else {
-            operativeSystem.getSuspendedReadyQueue().enqueue(process.getPcb());
+            operativeSystem.getLongTermQueue().enqueue(process.getPcb());
         }
         
         Lista aux = operativeSystem.getProcessList();
@@ -356,32 +375,34 @@ public class Interface1 extends javax.swing.JFrame {
     // FOR TESTING 
     public void runQuickAddDemo() {
     // Make sure called on EDT
-    Config config = JsonManager.loadConfigFromJson();
-    
-    if (config == null) {
-            System.err.println("No se pudo iniciar la simulación debido a un error de configuración.");
-            return;
-    }
-    
-    int cycleDuration = config.getCycleDurationMs();
-    
-    operativeSystem.setQuantum(cycleDuration);
-    
-    for (PData pd : config.getProcesses()) {
-            Proceso newProcess = new Proceso(
-                operativeSystem.getProcessList().count(),
-                pd.getName(),
-                pd.getBound(),
-                pd.getInstructions(),
-                pd.getIoCicles(),
-                pd.getSatisfyCicles(),
-                pd.getDeviceToUse(),
-                pd.getPriority()
-            );
-            addProcessToSystem(newProcess);
-    }
-    
+       
     javax.swing.SwingUtilities.invokeLater(() -> {
+        
+        Config config = JsonManager.loadConfigFromJson();
+    
+        if (config == null) {
+                System.err.println("No se pudo iniciar la simulación debido a un error de configuración.");
+                return;
+        }
+
+        int cycleDuration = config.getCycleDurationMs();
+
+        operativeSystem.setQuantum(cycleDuration);
+
+        for (PData pd : config.getProcesses()) {
+                Proceso newProcess = new Proceso(
+                    operativeSystem.getProcessList().count(),
+                    pd.getName(),
+                    pd.getBound(),
+                    pd.getInstructions(),
+                    pd.getIoCicles(),
+                    pd.getSatisfyCicles(),
+                    pd.getDeviceToUse(),
+                    pd.getPriority()
+                );
+                addProcessToSystem(newProcess);
+        }
+        
         // create test Proceso objects using the same constructor you already used in create_processActionPerformed
         // Adjust arguments to match your Proceso constructor if needed
         // public Proceso(int id, String name, String bound, int instructions, int ioCicles, int satisfyCicles, int deviceToUse, int priority) {
@@ -449,6 +470,7 @@ public class Interface1 extends javax.swing.JFrame {
     * This runs on the EDT because javax.swing.Timer events are delivered on the EDT.
     */
     private void updateTerminatedArea() {
+        
         if (show_terminated == null) return; // defensive
         // printListProcess() returns a String (list of process names). If it returns null, guard it.
         String txt = "";
@@ -461,7 +483,6 @@ public class Interface1 extends javax.swing.JFrame {
         show_terminated.repaint();
         
         updateActualProcess();
-        global_clock.setText(terminatedTimer.toString());
     }
     
     /**
@@ -497,7 +518,7 @@ public class Interface1 extends javax.swing.JFrame {
 
     private void startSchedulerBackground() {
         int selected = planification; // read atomic/volatile if planification can change concurrently
-        System.out.println(selected);
+        //System.out.println(selected);
         if (operativeSystem.getReadyQueue().getCount() > 0) {
             switch (selected) {
                 case 0 -> {
@@ -523,10 +544,11 @@ public class Interface1 extends javax.swing.JFrame {
     });
 }
     private void startSchedulerThread() {
+        
         if (schedulerThread != null && schedulerThread.isAlive()) return;
         schedulerThread = new Thread(() -> {
             // run until interrupted (dispose() will interrupt)
-            System.out.println("ssss");
+            //System.out.println("ssss");
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     startSchedulerBackground();
@@ -916,7 +938,7 @@ public class Interface1 extends javax.swing.JFrame {
                         .addComponent(jLabel4)
                         .addGap(7, 7, 7)
                         .addComponent(jScrollPane5, GroupLayout.PREFERRED_SIZE, 125, GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
+                        .addGap(20, 20, 20)
                         .addComponent(jLabel7)
                         .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jScrollPane2, GroupLayout.PREFERRED_SIZE, 125, GroupLayout.PREFERRED_SIZE)
@@ -936,7 +958,7 @@ public class Interface1 extends javax.swing.JFrame {
                             .addGroup(sim_panelLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
                                 .addComponent(global_clock1, GroupLayout.PREFERRED_SIZE, 54, GroupLayout.PREFERRED_SIZE)
                                 .addComponent(generate_processes, GroupLayout.PREFERRED_SIZE, 24, GroupLayout.PREFERRED_SIZE)))))
-                .addContainerGap(16, Short.MAX_VALUE))
+                .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         selection.addTab("Simulación", sim_panel);
@@ -1041,7 +1063,7 @@ public class Interface1 extends javax.swing.JFrame {
                 .addGroup(config_panelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
                     .addComponent(panel5, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
                     .addComponent(panel4, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(470, Short.MAX_VALUE))
+                .addContainerGap(471, Short.MAX_VALUE))
         );
 
         selection.addTab("Configuración", config_panel);
@@ -1052,7 +1074,7 @@ public class Interface1 extends javax.swing.JFrame {
             .addGap(0, 1361, Short.MAX_VALUE)
         );
         graphics_panelLayout.setVerticalGroup(graphics_panelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGap(0, 688, Short.MAX_VALUE)
+            .addGap(0, 689, Short.MAX_VALUE)
         );
 
         selection.addTab("Gráficos", graphics_panel);
@@ -1063,7 +1085,7 @@ public class Interface1 extends javax.swing.JFrame {
             .addComponent(selection)
         );
         layout.setVerticalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addComponent(selection, GroupLayout.DEFAULT_SIZE, 723, Short.MAX_VALUE)
+            .addComponent(selection, GroupLayout.DEFAULT_SIZE, 724, Short.MAX_VALUE)
         );
 
         pack();

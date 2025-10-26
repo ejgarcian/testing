@@ -1,0 +1,90 @@
+ public void Feedback(int setQuantum, Cola readyQueue, Lista readyQueueList, Dispatcher dispatcher, Cola blockedQueue, Lista terminatedProcessList) {
+        System.out.println("sssssssswqdqwfqfqfqfqfq");
+        int quantum = setQuantum;
+        if (Thread.currentThread().isInterrupted()) return;
+
+        PCB processToActivate = null;
+        // Buscar el primer bucket no vacío (nivel de mayor prioridad)
+        for (int i = 0; i < readyQueueList.count(); i++) {
+            Object bucketObj = readyQueueList.get(i);
+            if (!(bucketObj instanceof Cola)) continue;
+            Cola bucket = (Cola) bucketObj;
+            if (bucket.getCount() > 0) {
+                Object dequeued = bucket.dequeue();
+                if (dequeued instanceof PCB) {
+                    processToActivate = (PCB) dequeued;
+                    System.out.println("activando");
+                    System.out.println("id del proceso" + processToActivate.getId());
+                    dispatcher.activate(processToActivate, processList);
+                    System.out.println("status del pta" + processToActivate.getStatus());
+                    // Remove from global readyQueue using public API (safer than touching internals)
+                    readyQueue.removeValue(processToActivate);
+                    break;
+                }
+            }
+        }
+        
+        if (processToActivate == null) {
+            return;
+        }
+        
+        Proceso toRun = dispatcher.getActiveProcess(processList);
+        if (toRun == null) return;
+        if (Thread.currentThread().isInterrupted()) return;
+
+        toRun.getPcb().setTimesIn(toRun.getPcb().getTimesIn()+1);
+        while ("running".equals(toRun.getPcb().getStatus())) {
+            if (Thread.currentThread().isInterrupted()) return;
+
+            if (toRun.getTimeSpent() >= quantum || toRun.getProcessingTime() <= toRun.getTotalTimeSpent()){
+                dispatcher.deactivate(toRun);   // running --> ready
+                break;
+            }
+            if ("I/O Bound".equals(toRun.getBound()) && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
+                toRun.getPcb().setStatus("blocked");
+                blockedQueue.enqueue(toRun.getPcb());
+                try {
+                    Thread.sleep(toRun.getIoCicles()*1000);
+                    accessDevice(toRun, dispatcher, blockedQueue);
+                } 
+                catch(InterruptedException e) {
+                     Thread.currentThread().interrupt();
+                     return;
+                }
+            }
+            try {
+                Thread.sleep(1000);
+            } 
+            catch(InterruptedException e) {
+                 Thread.currentThread().interrupt();
+                 return;
+            }
+        }
+
+        if (toRun.getProcessingTime() <= toRun.getTotalTimeSpent()) {
+            toRun.getPcb().setStatus("terminated");
+            terminatedProcessList.add(toRun);
+        } else {
+            // Demote / reenqueue according to timesIn
+            int timesIn = toRun.getPcb().getTimesIn();
+            if (timesIn < readyQueueList.count()) {
+                Object obj = readyQueueList.get(timesIn);
+                if (obj instanceof Cola) {
+                    ((Cola) obj).enqueue(toRun.getPcb());
+                    readyQueue.enqueue(toRun.getPcb());
+                } else {
+                    // defensive: create a bucket if structure isn't as expected
+                    Cola aux = new Cola();
+                    readyQueueList.add(aux);
+                    aux.enqueue(toRun.getPcb());
+                    readyQueue.enqueue(toRun.getPcb());
+                }
+            } else {
+                Cola aux = new Cola();
+                readyQueueList.add(aux);
+                System.out.println(timesIn);
+                ((Cola) readyQueueList.get(timesIn)).enqueue(toRun.getPcb());
+                readyQueue.enqueue(toRun.getPcb());
+            }
+        }
+    }

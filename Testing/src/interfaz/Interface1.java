@@ -34,6 +34,9 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.WindowConstants;
+import json.Config;
+import json.JsonManager;
+import json.PData;
 
 /**
  *
@@ -459,12 +462,39 @@ public class Interface1 extends javax.swing.JFrame {
     
     // FOR TESTING 
     public void runQuickAddDemo() {
-    // Make sure called on EDT
+        
     javax.swing.SwingUtilities.invokeLater(() -> {
+        
+        Config config = JsonManager.loadConfigFromJson();
+    
+        if (config == null) {
+                System.err.println("No se pudo iniciar la simulación debido a un error de configuración.");
+                return;
+        }
+
+        int cycleDuration = config.getCycleDurationMs();
+
+        operativeSystem.setQuantum(cycleDuration);
+
+        for (PData pd : config.getProcesses()) {
+                Proceso newProcess = new Proceso(
+                    operativeSystem.getProcessList().count(),
+                    pd.getName(),
+                    pd.getBound(),
+                    pd.getInstructions(),
+                    pd.getIoCicles(),
+                    pd.getSatisfyCicles(),
+                    pd.getDeviceToUse(),
+                    pd.getPriority()
+                );
+                addProcessToSystem(newProcess);
+        }
+        
         // create test Proceso objects using the same constructor you already used in create_processActionPerformed
         // Adjust arguments to match your Proceso constructor if needed
         // public Proceso(int id, String name, String bound, int instructions, int ioCicles, int satisfyCicles, int deviceToUse, int priority) {
         
+        /*
         Proceso p1 = new Proceso(getId(), "Proceso "+getId(), "I/O Bound", 10, 0, 0, 1,1);   // expected Ready
         addProcessToSystem(p1);
         
@@ -511,7 +541,7 @@ public class Interface1 extends javax.swing.JFrame {
         addProcessToSystem(p15);
         
         Proceso p16 = new Proceso(getId(), "Proceso "+getId(), "CPU Bound", 40, 0, 0, 3,4); // expected Suspended Blocked
-        addProcessToSystem(p16);
+        addProcessToSystem(p16);*/
 
     });
 

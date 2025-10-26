@@ -244,15 +244,18 @@ public class Interface1 extends javax.swing.JFrame {
                 pane.repaint();
             }
         });
+       
     }
 
     // Convenience methods to refresh specific queues
     public void refreshReadyList(Cola readyQueue) {
         refreshContainerFromQueue(readyQueue, readyContainer, jScrollPane3);
+        System.out.println("Ready: "+readyQueue.getCount());
     }
 
     public void refreshBlockedList(Cola blockedQueue) {
         refreshContainerFromQueue(blockedQueue, blockedContainer, jScrollPane5);
+        System.out.println("Blocked: "+blockedQueue.getCount());
     }
 
     public void refreshSuspendedReadyList(Cola suspendedReadyQueue) {

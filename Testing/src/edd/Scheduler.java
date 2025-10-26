@@ -154,6 +154,7 @@ public class Scheduler {
     
     public void PriorityPlanification(int quantum, Cola readyQueue, Dispatcher dispatcher, Lista priorityList, Cola blockedQueue, Lista terminatedProcessList){
         // Recorremos las colas de prioridad en orden (0 = mayor prioridad)
+        reorganicePriorityPlanification(readyQueue, priorityList);
         for (int i = 0; i < priorityList.count(); i++){
             // check interruption on top of loops
             if (Thread.currentThread().isInterrupted()) return;
@@ -331,7 +332,9 @@ public class Scheduler {
                 if (Thread.currentThread().isInterrupted()) return;
 
                 if (toRun.getTimeSpent() >= quantum || toRun.getProcessingTime() <= toRun.getTotalTimeSpent()){
-                    dispatcher.deactivate(toRun);   // running --> ready
+                    dispatcher.deactivate(toRun);
+                    recalculateFSS(readyQueue, toRun.getPcb().getPriority());
+                    reorganiceFSS(readyQueue);// running --> ready
                 }
                 if ("I/O Bound".equals(toRun.getBound()) && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
                     toRun.getPcb().setStatus("blocked");

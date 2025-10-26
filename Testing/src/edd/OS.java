@@ -70,7 +70,6 @@ public class OS {
             System.out.println("si");
             return true;
         } else {
-            process.getPcb().setStatus("suspendedReady");
             System.out.println("no");
             return false;
         }

@@ -153,7 +153,8 @@ public class Lista {
         for (int i = 0; i < count(); i++) {
             Object o = get(i);
             if (o instanceof Proceso proceso) {
-                txt = txt + proceso.getPcb().getName() + "\n";
+                txt = txt + proceso.getPcb().getName() + "\n"
+                        + proceso.getPcb().getStatus() + "\n";
             }
         }
         return txt;

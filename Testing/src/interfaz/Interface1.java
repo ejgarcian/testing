@@ -45,6 +45,7 @@ public class Interface1 extends javax.swing.JFrame {
     private int planification;
     private boolean isSchedulerActive = false;
     private Thread schedulerThread;
+    int time;
    // private Lista devices = operativeSystem.getDeviceTable();    //---> No creo que sea necesario, se accede directamente a lo que está dentro del sistema operativo
    // private Lista processList = operativeSystem.getProcessList();
     
@@ -63,12 +64,18 @@ public class Interface1 extends javax.swing.JFrame {
         registerQueueListeners(); 
         
         // start a Swing Timer to refresh terminated list every 1 second (1000 ms)
-        terminatedTimer = new Timer(1000, e -> updateTerminatedArea());
+        terminatedTimer = new Timer(1000, e -> {
+            //time++;
+            //global_clock.setText(String.valueOf(time));
+            //global_clock.revalidate();
+            //global_clock.repaint();
+            updateTerminatedArea();
+            
+            }
+        );
         terminatedTimer.setRepeats(true);
         terminatedTimer.start();
         
-        // also do an initial immediate update
-        updateTerminatedArea();
         startSchedulerThread();
     }
 
@@ -338,7 +345,7 @@ public class Interface1 extends javax.swing.JFrame {
         if (operativeSystem.canBeReady(process) == true){
             operativeSystem.getReadyQueue().enqueue(process.getPcb());
         } else {
-            operativeSystem.getSuspendedReadyQueue().enqueue(process.getPcb());
+            operativeSystem.getLongTermQueue().enqueue(process.getPcb());
         }
         
         Lista aux = operativeSystem.getProcessList();
@@ -420,6 +427,7 @@ public class Interface1 extends javax.swing.JFrame {
     * This runs on the EDT because javax.swing.Timer events are delivered on the EDT.
     */
     private void updateTerminatedArea() {
+        
         if (show_terminated == null) return; // defensive
         // printListProcess() returns a String (list of process names). If it returns null, guard it.
         String txt = "";
@@ -432,7 +440,6 @@ public class Interface1 extends javax.swing.JFrame {
         show_terminated.repaint();
         
         updateActualProcess();
-        global_clock.setText(terminatedTimer.toString());
     }
     
     /**
@@ -494,6 +501,7 @@ public class Interface1 extends javax.swing.JFrame {
     });
 }
     private void startSchedulerThread() {
+        
         if (schedulerThread != null && schedulerThread.isAlive()) return;
         schedulerThread = new Thread(() -> {
             // run until interrupted (dispose() will interrupt)

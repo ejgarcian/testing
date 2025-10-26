@@ -41,10 +41,11 @@ import javax.swing.WindowConstants;
 public class Interface1 extends javax.swing.JFrame {
 
     private OS operativeSystem = new OS(4000);
-    private Timer terminatedTimer;
+    private Timer uiRefreshTimer;
     private int planification;
     private boolean isSchedulerActive = false;
     private Thread schedulerThread;
+    int time = 0;
    // private Lista devices = operativeSystem.getDeviceTable();    //---> No creo que sea necesario, se accede directamente a lo que está dentro del sistema operativo
    // private Lista processList = operativeSystem.getProcessList();
     
@@ -63,13 +64,7 @@ public class Interface1 extends javax.swing.JFrame {
         registerQueueListeners(); 
         
         // start a Swing Timer to refresh terminated list every 1 second (1000 ms)
-        terminatedTimer = new Timer(1000, e -> updateTerminatedArea());
-        terminatedTimer.setRepeats(true);
-        terminatedTimer.start();
-        
-        // also do an initial immediate update
-        updateTerminatedArea();
-        startSchedulerThread();
+        startUiRefreshTimer();
     }
 
     private void setupScrollContainers() {
@@ -430,9 +425,7 @@ public class Interface1 extends javax.swing.JFrame {
         show_terminated.setText(txt);
         show_terminated.revalidate();
         show_terminated.repaint();
-        
-        updateActualProcess();
-        global_clock.setText(terminatedTimer.toString());
+        global_clock.setText(String.valueOf(time));
     }
     
     /**
@@ -440,29 +433,48 @@ public class Interface1 extends javax.swing.JFrame {
     * This runs on the EDT because javax.swing.Timer events are delivered on the EDT.
     */
     private void updateActualProcess() {
-        if (show_actual == null) return; // defensive
+        if (show_actual == null) return;
 
         String txt = "";
         try {
-            if (operativeSystem != null && operativeSystem.getProcessList().count() > 0) {
-                Proceso active = operativeSystem.getDispatcher().getActiveProcess(operativeSystem.getProcessList());
-                if (active != null && active.getPcb() != null) {
-                    PCB pcb = active.getPcb();
-                    String name = pcb.getName();
-                    txt = name == null ? "" : name;
-                } else {
-                    // No active process currently
-                    txt = "";
+            synchronized (operativeSystem) {
+                if (operativeSystem != null && operativeSystem.getProcessList().count() > 0) {
+                    Proceso active = operativeSystem.getDispatcher().getActiveProcess(operativeSystem.getProcessList());
+                    if (active != null && active.getPcb() != null) {
+                        PCB pcb = active.getPcb();
+                        String name = pcb.getName();
+                        txt = name == null ? "" : name;
+                    } else {
+                        txt = "";
+                    }
                 }
             }
         } catch (Exception ex) {
-            // avoid exceptions killing the EDT — show blank and log the problem
             System.err.println("updateActualProcess error: " + ex);
             txt = "";
         }
+        // This must run on the EDT; if already called by Swing Timer / invokeLater it's fine.
         show_actual.setText(txt);
         show_actual.revalidate();
         show_actual.repaint();
+    }
+    
+    private void startUiRefreshTimer() {
+        if (uiRefreshTimer != null && uiRefreshTimer.isRunning()) return;
+        uiRefreshTimer = new javax.swing.Timer(1000, e -> {
+            // Take a short synchronized snapshot of the model
+            synchronized (operativeSystem) {
+                refreshReadyList(operativeSystem.getReadyQueue());
+                refreshBlockedList(operativeSystem.getBlockedQueue());
+                refreshSuspendedReadyList(operativeSystem.getSuspendedReadyQueue());
+                refreshSuspendedBlockedList(operativeSystem.getSuspendedBlockedQueue());
+                updateTerminatedArea();
+                updateActualProcess();
+                time++;
+            }
+        });
+        uiRefreshTimer.setCoalesce(true);
+        uiRefreshTimer.start();
     }
 
     private void startSchedulerBackground() {
@@ -1067,14 +1079,7 @@ public class Interface1 extends javax.swing.JFrame {
         Proceso newProcess = new Proceso(getId(), "Proceso "+getId(), type, inst, interruptCicleVal, interruptHandledVal, device, priority);
 
         addProcessToSystem(newProcess);
-        // decide ready or suspended (this enqueues the PCB)
-        if (!isSchedulerActive) {
-            new Thread( () -> {
-                startSchedulerBackground();
-                isSchedulerActive = true;
-        });
-            
-        }
+        
     }//GEN-LAST:event_create_processActionPerformed
 
     

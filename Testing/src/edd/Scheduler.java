@@ -104,21 +104,21 @@ public class Scheduler {
             PCB pcbOfActiveProcess = ((PCB)processToActivate);
             
             // verificar si el proceso ya está activado y si no lo está, activarlo
-            if (pcbOfActiveProcess.getStatus() != "running"){ //
+            if (!"running".equals(pcbOfActiveProcess.getStatus())){ //
                 dispatcher.activate(pcbOfActiveProcess, getProcessList()); // ready ---> running
             }
             
             // while running
             Proceso toRun = dispatcher.getActiveProcess(processList);
             
-            while(toRun.getPcb().getStatus() == "running"){
+            while("running".equals(toRun.getPcb().getStatus())){
                 if (Thread.currentThread().isInterrupted()) return;
 
                 if (toRun.getProcessingTime() == toRun.getTimeSpent()){
                     dispatcher.deactivate(toRun);
                     readyQueue.dequeue();
                 }
-                if (toRun.getBound() == "I/O Bound" && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
+                if ("I/O Bound".equals(toRun.getBound()) && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
                     toRun.getPcb().setStatus("blocked");
                     blockedQueue.enqueue(toRun.getPcb());
                     try {
@@ -160,19 +160,19 @@ public class Scheduler {
             
             if (act.getCount() > 0){
                 readyQueue.getQueue().remove(readyQueue.getQueue().indexOf(pcbOfActiveProcess));
-                if (pcbOfActiveProcess.getStatus() != "running"){
+                if (!"running".equals(pcbOfActiveProcess.getStatus())){
                     dispatcher.activate(pcbOfActiveProcess, processList);
                 }
                 
                 //while running
                 Proceso toRun = dispatcher.getActiveProcess(processList);
-                while(toRun.getPcb().getStatus() == "running") {
+                while("running".equals(toRun.getPcb().getStatus())) {
                     if (Thread.currentThread().isInterrupted()) return;
 
                     if (toRun.getTimeSpent() >= quantum || toRun.getProcessingTime() <= toRun.getTotalTimeSpent()){
                         dispatcher.deactivate(toRun);   // running --> ready                    
                     }
-                    if (toRun.getBound() == "I/O Bound" && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
+                    if ("I/O Bound".equals(toRun.getBound()) && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
                         toRun.getPcb().setStatus("blocked");
                         blockedQueue.enqueue(toRun.getPcb());
                         try {
@@ -330,13 +330,13 @@ public class Scheduler {
             Proceso toRun = dispatcher.getActiveProcess(getProcessList());
             if (toRun == null) return;
 
-            while (toRun.getPcb().getStatus() == "running"){
+            while ("running".equals(toRun.getPcb().getStatus())){
                 if (Thread.currentThread().isInterrupted()) return;
 
                 if (toRun.getTimeSpent() >= quantum || toRun.getProcessingTime() <= toRun.getTotalTimeSpent()){
                     dispatcher.deactivate(toRun);   // running --> ready
                 }
-                if (toRun.getBound() == "I/O Bound" && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
+                if ("I/O Bound".equals(toRun.getBound()) && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
                     toRun.getPcb().setStatus("blocked");
                     blockedQueue.enqueue(toRun.getPcb());
                     try {
@@ -373,14 +373,14 @@ public class Scheduler {
             Proceso toRun = dispatcher.getActiveProcess(getProcessList());
             if (toRun == null) return;
 
-            while (toRun.getPcb().getStatus() == "running"){
+            while ("running".equals(toRun.getPcb().getStatus())){
                 if (Thread.currentThread().isInterrupted()) return;
 
                 if (toRun.getProcessingTime() <= toRun.getTimeSpent()){
                     dispatcher.deactivate(toRun);
                     readyQueue.dequeue();
                 }
-                if (toRun.getBound() == "I/O Bound" && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
+                if ("I/O Bound".equals(toRun.getBound()) && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
                     toRun.getPcb().setStatus("blocked");
                     blockedQueue.enqueue(toRun.getPcb());
                     try {

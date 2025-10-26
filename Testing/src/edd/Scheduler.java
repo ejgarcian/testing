@@ -691,14 +691,22 @@ public class Scheduler {
     
     
     public void accessDevice(Proceso blockedProcess, Dispatcher dispatcher, Cola blockedQueue){
+        if (blockedProcess == null) {
+            System.err.println("accessDevice: blockedProcess is null");
+            return;
+        }
+
         int i = 0;
         Device aux = null;
         while (i < deviceTable.count()){
             if (Thread.currentThread().isInterrupted()) return;
-            if (blockedProcess.getDeviceToUse() == ((Device)deviceTable.get(i)).getId()){
-                aux = ((Device)deviceTable.get(i));
+            Object o = deviceTable.get(i);
+            if (!(o instanceof Device)) { i++; continue; }
+            Device dev = (Device) o;
+            if (blockedProcess.getDeviceToUse() == dev.getId()){
+                aux = dev;
                 try {
-                    System.out.println("accediendo al device");
+                    System.out.println("accediendo al device id=" + dev.getId());
                     aux.getSemaf().acquire();
                 } catch(InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -708,11 +716,27 @@ public class Scheduler {
             }
             i++;
         }
+
+        if (aux == null) {
+            // No matching device found — log and return safely
+            System.err.println("accessDevice: no device found with id " + blockedProcess.getDeviceToUse());
+            return;
+        }
+
         try {
-            blockedProcess.sleep(blockedProcess.getSatisfyCicles()*1000);
+            // Use Thread.sleep (static) — same effect as blockedProcess.sleep(...)
+            Thread.sleep((long) blockedProcess.getSatisfyCicles() * 1000L);
             aux.getSemaf().release();
-            dispatcher.deactivate(blockedProcess);
-            blockedQueue.getQueue().remove(blockedQueue.getQueue().indexOf(blockedProcess.getPcb()));
+
+            // deactivate thread (safe null-check)
+            if (dispatcher != null) {
+                dispatcher.deactivate(blockedProcess);
+            }
+
+            // Remove the PCB from blockedQueue using the public API (safer)
+            if (blockedQueue != null) {
+                blockedQueue.removeValue(blockedProcess.getPcb());
+            }
         } 
         catch(InterruptedException e) {
              Thread.currentThread().interrupt();

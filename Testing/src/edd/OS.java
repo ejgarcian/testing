@@ -60,17 +60,19 @@ public class OS {
     
     
     public boolean canBeReady(Proceso process){
-    
-        int memory = getRemainingSpace() - process.getMemorySpace();
-        this.setRemainingSpace(memory);
-        System.out.println(memory);
-        
-        if (memory > 0){
+        // compute potential remaining space without mutating state
+        int potential = getRemainingSpace() - process.getMemorySpace();
+
+        // allow exact fit (change to >0 if you prefer strictly positive)
+        if (potential >= 0) {
+            // commit the subtraction only when we accept the process
+            this.setRemainingSpace(potential);
             process.getPcb().setStatus("ready");
             System.out.println("si");
             return true;
         } else {
             System.out.println("no");
+            // do NOT change remainingSpace here
             return false;
         }
     }

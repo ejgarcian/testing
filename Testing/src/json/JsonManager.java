@@ -39,9 +39,9 @@ public class JsonManager {
             File file = new File(FILE_PATH);
             if (!file.exists()) {
                 System.out.println("⚠️ Archivo de configuración no encontrado. Creando configuración por defecto...");
-                Config defaultConfig = createDefaultConfig();
-                saveConfigToJson(defaultConfig); 
-                return defaultConfig;
+                //Config defaultConfig = createDefaultConfig();
+                //saveConfigToJson(defaultConfig); 
+                //return defaultConfig;
             }
             
             Config config = mapper.readValue(file, Config.class);
@@ -52,7 +52,7 @@ public class JsonManager {
             return null;
         }
     }
-    
+    /*
     // --- Creación de Configuración por Defecto (usando arrays) ---
     private static Config createDefaultConfig() {
         int cycleDuration = 50; 
@@ -60,12 +60,12 @@ public class JsonManager {
         // Se inicializa el array directamente
         PData[] defaultProcesses = new PData[] {
             // name, bound, instructions, ioCicles, satisfyCicles, deviceToUse, priority
-            new PData("P_CPU_1", "CPU", 500, 0, 0, 0, 1),
-            new PData("P_IO_1", "I/O", 300, 100, 50, 2, 2),
-            new PData("P_IO_2", "I/O", 450, 200, 75, 1, 3),
-            new PData("P_CPU_2", "CPU", 800, 0, 0, 0, 1)
+            new PData("P_CPU_1", "CPU", 10, 0, 0, 0, 1),
+            new PData("P_IO_1", "I/O", 25, 100, 50, 2, 2),
+            new PData("P_IO_2", "I/O", 10, 200, 75, 1, 3),
+            new PData("P_CPU_2", "CPU", 20, 0, 0, 0, 1)
         };
         
         return new Config(cycleDuration, defaultProcesses);
-    }
+    }*/
 }

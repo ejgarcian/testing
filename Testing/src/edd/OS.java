@@ -31,13 +31,15 @@ public class OS {
     
     
     public Cola fillReadyQueue(){
-        //Cola readyQueue = new Cola();
+        // Llena readyQueue con los procesos cuyo PCB.status == "ready"
+        // Corregido: usar equals en lugar de == y no incrementar i en else (evitaba elementos)
         for (int i = 0; i < getProcessList().count(); i++){
-            PCB auxProcessPCB = ((Proceso) getProcessList().get(i)).getPcb();
-            if (auxProcessPCB.getStatus() == "ready"){
-                getReadyQueue().enqueue(getProcessList().get(i));
-            } else{
-                i++;
+            Object obj = getProcessList().get(i);
+            if (!(obj instanceof Proceso)) continue;
+            Proceso proc = (Proceso) obj;
+            PCB auxProcessPCB = proc.getPcb();
+            if ("ready".equals(auxProcessPCB.getStatus())){
+                getReadyQueue().enqueue(proc);
             }
         }
         return getReadyQueue();

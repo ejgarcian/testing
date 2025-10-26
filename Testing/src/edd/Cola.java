@@ -8,6 +8,8 @@
  */
 package edd;
 
+import javax.swing.SwingUtilities;
+
 /**
  * Esta clase define un objeto de tipo cola. Contiene una lista de los elementos encolados.
  * 
@@ -121,20 +123,35 @@ public class Cola {
     /**
      * Notify all registered listeners that this queue changed.
      * Note: keep private but expose fireChange() for controlled public triggering.
+     *
+     * Important change: listeners are invoked on the Swing Event Dispatch Thread (EDT)
+     * so UI code updating JScrollPanes / Swing components runs safely and repaints properly.
      */
     private void notifyListeners() {
+        // Take a snapshot of current listeners to avoid holding locks while notifying
         int n = listeners.count();
-        // iterate by index to avoid using java.util
+        Object[] snap = new Object[n];
         for (int i = 0; i < n; i++) {
-            Object o = listeners.get(i);
+            snap[i] = listeners.get(i);
+        }
+
+        // Schedule each listener call on the EDT. This prevents UI updates from happening
+        // on scheduler/background threads where Swing is not thread-safe.
+        for (int i = 0; i < n; i++) {
+            final Object o = snap[i];
             if (o instanceof QueueChangeListener) {
-                try {
-                    ((QueueChangeListener) o).queueChanged(this);
-                } catch (Exception ex) {
-                    // avoid listener exceptions breaking queue logic
-                    System.err.println("Queue listener threw: " + ex);
-                    ex.printStackTrace();
-                }
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            ((QueueChangeListener) o).queueChanged(Cola.this);
+                        } catch (Exception ex) {
+                            // avoid listener exceptions breaking queue logic; print on EDT so stack trace is coherent
+                            System.err.println("Queue listener threw: " + ex);
+                            ex.printStackTrace();
+                        }
+                    }
+                });
             }
         }
     }

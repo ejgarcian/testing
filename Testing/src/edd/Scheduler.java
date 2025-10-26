@@ -85,7 +85,7 @@ public class Scheduler {
     
     public void SPN(Cola readyQueue, Dispatcher dispatcher, Cola blockedQueue, Lista terminatedProcessList){
         if (readyQueue.getCount() > 0){
-            var processToActivate = readyQueue.get(0);
+            var processToActivate = readyQueue.dequeue();
             PCB pcbOfActiveProcess = ((PCB)processToActivate);
             
             // verificar si el proceso ya está activado y si no lo está, activarlo

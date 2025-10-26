@@ -25,6 +25,10 @@ public class Cola {
      * @param j Objeto a encolar
      */
     public synchronized void enqueue(Object j) {
+        
+        if (getQueue().contains(j)){
+            return;
+        }
         getQueue().add(j);
         notifyListeners();
     }

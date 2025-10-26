@@ -60,7 +60,7 @@ public class Lista {
             }
         } else {
             index--;
-            if (this.next.get(index) != null){
+            if (this.next != null){
                 return this.next.get(index);
             } else {
                 return null;

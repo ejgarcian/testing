@@ -308,10 +308,7 @@ public class Interface1 extends javax.swing.JFrame {
             if (readyContainer == null) setupScrollContainers();
             return readyContainer;
         }
-
-        // fallback default
-        if (readyContainer == null) setupScrollContainers();
-        return readyContainer;
+        return null;
     }
     
     private JScrollPane getScrollPaneForContainer(JPanel container) {

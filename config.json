@@ -1,0 +1,41 @@
+{
+  "cycleDuration": 2,
+  "processes": [
+    {
+      "name": "P_CPU_1",
+      "bound": "CPU Bound",
+      "instructions": 5,
+      "ioCicles": 0,
+      "satisfyCicles": 0,
+      "deviceToUse": 0,
+      "priority": 1
+    },
+    {
+      "name": "P_IO_1",
+      "bound": "I/O Bound",
+      "instructions": 30,
+      "ioCicles": 10,
+      "satisfyCicles": 5,
+      "deviceToUse": 2,
+      "priority": 2
+    },
+    {
+      "name": "P_IO_2",
+      "bound": "I/O Bound",
+      "instructions": 15,
+      "ioCicles": 10,
+      "satisfyCicles": 5,
+      "deviceToUse": 1,
+      "priority": 3
+    },
+    {
+      "name": "P_CPU_2",
+      "bound": "CPU Bound",
+      "instructions": 8,
+      "ioCicles": 0,
+      "satisfyCicles": 0,
+      "deviceToUse": 0,
+      "priority": 1
+    }
+  ]
+}

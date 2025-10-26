@@ -37,7 +37,6 @@ import javax.swing.WindowConstants;
 import json.Config;
 import json.JsonManager;
 import json.PData;
-import json.PDataList;
 
 /**
  *
@@ -458,72 +457,12 @@ public class Interface1 extends javax.swing.JFrame {
         Lista aux = operativeSystem.getProcessList();
         aux.add(process);
         operativeSystem.setProcessList(aux);
-        
-        /*
-         * Persist the created process to the JSON configuration:
-         * - Ensure setConfig is initialized (load from file or create new)
-         * - Convert current setConfig.processes (PData[]) into a PDataList
-         * - Append the new PData built from 'process'
-         * - Save the updated Config back to disk using JsonManager.saveConfigToJson(...)
-         *
-         * Note: java.util.* is not used anywhere here; only arrays and the provided PDataList.
-         */
-        PData pd = new PData(
-            process.getName(),
-            process.getBound(),
-            process.getInstructions(),
-            process.getIoCicles(),
-            process.getSatisfyCicles(),
-            process.getDeviceToUse(),
-            process.getPriority()
-        );
-
-        // Load existing config if we don't have it yet
-        if (setConfig == null) {
-            setConfig = JsonManager.loadConfigFromJson();
-        }
-
-        if (setConfig == null) {
-            // No config on disk: create a fresh one using current quantum as cycleDuration
-            PDataList newList = new PDataList(4);
-            newList.add(pd);
-            setConfig = new Config(operativeSystem.getQuantum(), newList);
-        } else {
-            // Existing config found: convert its array to PDataList, append and set back
-            PData[] existing = setConfig.getProcesses();
-            int initialCapacity = (existing == null) ? 4 : existing.length + 1;
-            PDataList list = new PDataList(initialCapacity);
-            if (existing != null) {
-                for (int i = 0; i < existing.length; i++) {
-                    PData e = existing[i];
-                    if (e != null) {
-                        list.add(e);
-                    }
-                }
-            }
-            list.add(pd);
-            setConfig.setProcesses(list.toArray());
-        }
-
-        // Persist the updated configuration
-        JsonManager.saveConfigToJson(setConfig);
-
-        System.out.println("Processssos: "+operativeSystem.getProcessList().count());
     }
     
-    public static PDataList fromArray(PData[] array) {
-        PDataList list = new PDataList(array.length);
-        for (PData pd : array) {
-            list.add(pd);
-        }
-    return list;
-}
-    
     // FOR TESTING 
-    public void runQuickAddDemo() {
+     public void runQuickAddDemo() {
         
         Config config = JsonManager.loadConfigFromJson();
-        setConfig = config;
     
         if (config == null) {
                 System.err.println("No se pudo iniciar la simulación debido a un error de configuración.");
@@ -533,29 +472,25 @@ public class Interface1 extends javax.swing.JFrame {
         int cycleDuration = config.getCycleDurationMs();
 
         operativeSystem.setQuantum(cycleDuration);
-        cicle_duration.setText(String.valueOf(operativeSystem.getQuantum()));
 
-        PDataList pdataList = fromArray(config.getProcesses());
-        for (int i = 0; i < pdataList.size(); i++) {
-            PData pd = pdataList.get(i);
-
-            Proceso newProcess = new Proceso(
-                operativeSystem.getProcessList().count(),
-                pd.getName(),
-                pd.getBound(),
-                pd.getInstructions(),
-                pd.getIoCicles(),
-                pd.getSatisfyCicles(),
-                pd.getDeviceToUse(),
-                pd.getPriority()
-            );
-
-            addProcessToSystem(newProcess);
+        for (PData pd : config.getProcesses()) {
+                Proceso newProcess = new Proceso(
+                    operativeSystem.getProcessList().count(),
+                    pd.getName(),
+                    pd.getBound(),
+                    pd.getInstructions(),
+                    pd.getIoCicles(),
+                    pd.getSatisfyCicles(),
+                    pd.getDeviceToUse(),
+                    pd.getPriority()
+                );
+                addProcessToSystem(newProcess);
         }
-        
+                /*
     javax.swing.SwingUtilities.invokeLater(() -> {
         
         
+        }*/
         
         // create test Proceso objects using the same constructor you already used in create_processActionPerformed
         // Adjust arguments to match your Proceso constructor if needed
@@ -609,8 +544,6 @@ public class Interface1 extends javax.swing.JFrame {
         
         Proceso p16 = new Proceso(getId(), "Proceso "+getId(), "CPU Bound", 40, 0, 0, 3,4); // expected Suspended Blocked
         addProcessToSystem(p16);*/
-
-    });
 
     }
     
@@ -785,7 +718,6 @@ public class Interface1 extends javax.swing.JFrame {
         jScrollPane3 = new JScrollPane();
         jScrollPane4 = new JScrollPane();
         jScrollPane5 = new JScrollPane();
-        save_processes_json = new JButton();
         config_panel = new Panel();
         panel4 = new Panel();
         jLabel9 = new JLabel();
@@ -1052,17 +984,6 @@ public class Interface1 extends javax.swing.JFrame {
         global_clock1.setFont(new Font("Segoe UI", 0, 36)); // NOI18N
         global_clock1.setText("s");
 
-        save_processes_json.setBackground(new Color(72, 149, 125));
-        save_processes_json.setForeground(new Color(255, 255, 255));
-        save_processes_json.setText("  Guardar procesos  ");
-        save_processes_json.setBorder(null);
-        save_processes_json.setBorderPainted(false);
-        save_processes_json.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                save_processes_jsonActionPerformed(evt);
-            }
-        });
-
         GroupLayout sim_panelLayout = new GroupLayout(sim_panel);
         sim_panel.setLayout(sim_panelLayout);
         sim_panelLayout.setHorizontalGroup(sim_panelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
@@ -1072,15 +993,13 @@ public class Interface1 extends javax.swing.JFrame {
                     .addComponent(panel3, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(panel2, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(sim_panelLayout.createSequentialGroup()
-                        .addGroup(sim_panelLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
+                        .addGroup(sim_panelLayout.createParallelGroup(GroupLayout.Alignment.TRAILING, false)
                             .addGroup(sim_panelLayout.createSequentialGroup()
                                 .addComponent(global_clock, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(global_clock1, GroupLayout.PREFERRED_SIZE, 21, GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(generate_processes, GroupLayout.PREFERRED_SIZE, 96, GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(save_processes_json, GroupLayout.PREFERRED_SIZE, 148, GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(generate_processes, GroupLayout.PREFERRED_SIZE, 224, GroupLayout.PREFERRED_SIZE))
                             .addComponent(panel1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addGap(107, 107, 107)
@@ -1121,16 +1040,15 @@ public class Interface1 extends javax.swing.JFrame {
                         .addComponent(panel3, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(panel1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(sim_panelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                            .addComponent(global_clock, GroupLayout.Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 54, GroupLayout.PREFERRED_SIZE)
-                            .addGroup(sim_panelLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                                .addComponent(global_clock1, GroupLayout.PREFERRED_SIZE, 54, GroupLayout.PREFERRED_SIZE)
-                                .addGroup(sim_panelLayout.createSequentialGroup()
-                                    .addGap(14, 14, 14)
-                                    .addGroup(sim_panelLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                                        .addComponent(generate_processes, GroupLayout.PREFERRED_SIZE, 24, GroupLayout.PREFERRED_SIZE)
-                                        .addComponent(save_processes_json, GroupLayout.PREFERRED_SIZE, 24, GroupLayout.PREFERRED_SIZE)))))))
+                            .addGroup(sim_panelLayout.createSequentialGroup()
+                                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(sim_panelLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                                    .addComponent(global_clock, GroupLayout.Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 54, GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(global_clock1, GroupLayout.PREFERRED_SIZE, 54, GroupLayout.PREFERRED_SIZE)))
+                            .addGroup(sim_panelLayout.createSequentialGroup()
+                                .addGap(24, 24, 24)
+                                .addComponent(generate_processes, GroupLayout.PREFERRED_SIZE, 24, GroupLayout.PREFERRED_SIZE)))))
                 .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -1258,7 +1176,7 @@ public class Interface1 extends javax.swing.JFrame {
             .addComponent(selection)
         );
         layout.setVerticalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addComponent(selection, GroupLayout.DEFAULT_SIZE, 702, Short.MAX_VALUE)
+            .addComponent(selection)
         );
 
         pack();
@@ -1294,10 +1212,6 @@ public class Interface1 extends javax.swing.JFrame {
         addProcessToSystem(newProcess);
         
     }//GEN-LAST:event_create_processActionPerformed
-
-    private void save_processes_jsonActionPerformed(ActionEvent evt) {//GEN-FIRST:event_save_processes_jsonActionPerformed
-        JsonManager.saveConfigToJson(setConfig);
-    }//GEN-LAST:event_save_processes_jsonActionPerformed
 
     
     
@@ -1383,7 +1297,6 @@ public class Interface1 extends javax.swing.JFrame {
     private Choice process_type;
     private JButton save_cicles;
     private JButton save_policy;
-    private JButton save_processes_json;
     private JTabbedPane selection;
     private JSpinner set_process_priority;
     private JTextArea show_actual;

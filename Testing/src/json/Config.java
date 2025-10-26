@@ -16,9 +16,9 @@ public class Config {
 
     public Config() {}
 
-    public Config(int cycleDurationMs, PDataList processes) {
+    public Config(int cycleDurationMs, PData[] processes) {
         this.cycleDurationMs = cycleDurationMs;
-        this.processes = processes.toArray();
+        this.processes = processes;
     }
 
     // Getters y Setters

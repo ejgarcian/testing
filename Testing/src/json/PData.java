@@ -30,7 +30,6 @@ public class PData {
         this.priority = priority;
     }
 
-    
     public String getName() {
         return name;
     }
@@ -86,5 +85,4 @@ public class PData {
     public void setPriority(int priority) {
         this.priority = priority;
     }
-    
 }

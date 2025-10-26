@@ -1,0 +1,6 @@
+Las medidas de rendimiento requeridas son las siguientes: Procesos completados
+
+por unidad de tiempo (throughput), utilización del procesador (tiempo que la CPU
+está ocupada), equidad, tiempo de respuesta (tiempo de espera promedio por
+proceso).
+

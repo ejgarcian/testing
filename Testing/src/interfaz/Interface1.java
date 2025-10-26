@@ -460,14 +460,54 @@ public class Interface1 extends javax.swing.JFrame {
         operativeSystem.setProcessList(aux);
         
         /*
-        // SAVING DATA IN JSON
-        // public PData(String name, String bound, int instructions, int ioCicles, int satisfyCicles, int deviceToUse, int priority)
-        PData nuevoProceso = new PData(process.getName(), process.getBound(), process.getInstructions(), process.getIoCicles(), process.getSatisfyCicles(), process.getDeviceToUse(), process.getPriority()); // fill with values
-        PDataList aux2 = new PDataList(operativeSystem.getProcessList().count());
-        aux2.add(nuevoProceso);
-        setConfig.setProcesses(toArray(aux2));
+         * Persist the created process to the JSON configuration:
+         * - Ensure setConfig is initialized (load from file or create new)
+         * - Convert current setConfig.processes (PData[]) into a PDataList
+         * - Append the new PData built from 'process'
+         * - Save the updated Config back to disk using JsonManager.saveConfigToJson(...)
+         *
+         * Note: java.util.* is not used anywhere here; only arrays and the provided PDataList.
+         */
+        PData pd = new PData(
+            process.getName(),
+            process.getBound(),
+            process.getInstructions(),
+            process.getIoCicles(),
+            process.getSatisfyCicles(),
+            process.getDeviceToUse(),
+            process.getPriority()
+        );
+
+        // Load existing config if we don't have it yet
+        if (setConfig == null) {
+            setConfig = JsonManager.loadConfigFromJson();
+        }
+
+        if (setConfig == null) {
+            // No config on disk: create a fresh one using current quantum as cycleDuration
+            PDataList newList = new PDataList(4);
+            newList.add(pd);
+            setConfig = new Config(operativeSystem.getQuantum(), newList);
+        } else {
+            // Existing config found: convert its array to PDataList, append and set back
+            PData[] existing = setConfig.getProcesses();
+            int initialCapacity = (existing == null) ? 4 : existing.length + 1;
+            PDataList list = new PDataList(initialCapacity);
+            if (existing != null) {
+                for (int i = 0; i < existing.length; i++) {
+                    PData e = existing[i];
+                    if (e != null) {
+                        list.add(e);
+                    }
+                }
+            }
+            list.add(pd);
+            setConfig.setProcesses(list.toArray());
+        }
+
+        // Persist the updated configuration
         JsonManager.saveConfigToJson(setConfig);
-        */
+
         System.out.println("Processssos: "+operativeSystem.getProcessList().count());
     }
     

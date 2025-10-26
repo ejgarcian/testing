@@ -40,7 +40,9 @@ public class JsonManager {
             if (!file.exists()) {
                 System.out.println("⚠️ Archivo de configuración no encontrado. Creando configuración por defecto...");
                 Config defaultConfig = createDefaultConfig();
-                saveConfigToJson(defaultConfig); 
+                if (defaultConfig != null) {
+                    saveConfigToJson(defaultConfig); 
+                }
                 return defaultConfig;
             }
             
@@ -61,23 +63,15 @@ public class JsonManager {
     private static Config createDefaultConfig() {
         int cycleDuration = 20;
 
-        // Define default processes
-        PData[] defaultProcesses = new PData[] {
-            new PData("P_CPU_1", "CPU", 10, 0, 0, 0, 1),
-            new PData("P_IO_1", "I/O", 25, 100, 50, 2, 2),
-            new PData("P_IO_2", "I/O", 10, 200, 75, 1, 3),
-            new PData("P_CPU_2", "CPU", 20, 0, 0, 0, 1)
-        };
+        // Define default processes using PDataList (no java.util usage)
+        PDataList defaultList = new PDataList(4);
 
-        /*
-        // Create config with initial capacity
-        Config config = new Config(cycleDuration, defaultProcesses);
-        
-        // Add each PData to the config's process list
-        for (PData pd : defaultProcesses) {
-            config.addProcess(pd);
-        }
-*/
-        return null;
+        defaultList.add(new PData("P_CPU_1", "CPU", 10, 0, 0, 0, 1));
+        defaultList.add(new PData("P_IO_1", "I/O", 25, 100, 50, 2, 2));
+        defaultList.add(new PData("P_IO_2", "I/O", 10, 200, 75, 1, 3));
+        defaultList.add(new PData("P_CPU_2", "CPU", 20, 0, 0, 0, 1));
+
+        Config config = new Config(cycleDuration, defaultList);
+        return config;
     }
 }

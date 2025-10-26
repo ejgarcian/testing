@@ -1,0 +1,32 @@
+public void executeFSS() {
+    // Build priority buckets first (this may add Cola objects to priorityList)
+    scheduler.reorganicePriorityPlanification(readyQueue, priorityList);
+
+    int priorities = scheduler.getPriorities(readyQueue);
+    // iterate deterministically over existing priority buckets
+    for (int i = 0; i < priorities; i++) {
+        Object bucket = null;
+        try {
+            bucket = priorityList.get(i);
+        } catch (Exception ex) {
+            // defensive: if priorityList is shorter than expected, skip the bucket
+            continue;
+        }
+        if (!(bucket instanceof Cola)) continue;
+        Cola col = (Cola) bucket;
+        if (col.getCount() == 0) continue;
+
+        Object first = col.get(0);
+        if (!(first instanceof PCB)) continue;
+        int priority = ((PCB) first).getPriority();
+
+        // recompute FSS metrics only for this priority
+        scheduler.recalculateFSS(readyQueue, priority);
+    }
+
+    // reorder the ready queue using the computed FSS metric
+    scheduler.reorganiceFSS(readyQueue);
+
+    // run the FSS scheduling tick
+    scheduler.FSS(quantum, readyQueue, dispatcher, blockedQueue, terminatedProcessList);
+}

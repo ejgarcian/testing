@@ -49,6 +49,10 @@ public class Interface1 extends javax.swing.JFrame {
     int time;
    // private Lista devices = operativeSystem.getDeviceTable();    //---> No creo que sea necesario, se accede directamente a lo que está dentro del sistema operativo
    // private Lista processList = operativeSystem.getProcessList();
+    private GraphicsCharts graphicsCharts;
+    private int prevTerminatedCount = 0;
+    private int busyTicks = 0;
+    private int totalTicks = 0;
     
     private javax.swing.JPanel readyContainer;           // for jScrollPane3 (Cola de Listos)
     private javax.swing.JPanel blockedContainer;         // for jScrollPane5 (Cola de Bloqueados)
@@ -74,19 +78,103 @@ public class Interface1 extends javax.swing.JFrame {
         terminatedTimer.start();
         
         timeTimer = new Timer(1000, e -> {
-            
-            time++;
+                time++;
                 global_clock.setText(String.valueOf(time));
                 global_clock.revalidate();
                 global_clock.repaint();
+                
+                sampleAndPushMetrics();
             }
         );
         timeTimer.setRepeats(true);
         timeTimer.start();
         
+        initGraphicsCharts();
+        
         startSchedulerThread();
     }
 
+    private void initGraphicsCharts() {
+        if (graphics_panel == null) return;
+        graphicsCharts = new GraphicsCharts(120); // 120 muestras (~2 minutos si tick=1s)
+        graphics_panel.setLayout(new java.awt.BorderLayout());
+        graphics_panel.add(graphicsCharts, java.awt.BorderLayout.CENTER);
+        graphics_panel.revalidate();
+        graphics_panel.repaint();
+    }
+    
+    /**
+     * Toma muestras y las envía al componente gráfico. Este método es llamado
+     * periódicamente desde timeTimer (EDT), por lo que puede acceder a la UI
+     * sin invokeLater.
+     *
+     * Métricas calculadas (aproximadas con la información disponible en OS/Proceso):
+     *  - Throughput = delta(terminatedCount) por tick
+     *  - CPU Utilization = busyTicks / totalTicks (se actualiza acumulativamente)
+     *  - Fairness = Jain's index sobre tiempos totales (totalTimeSpent) de procesos terminados
+     *  - Response time = promedio de totalTimeSpent en procesos terminados (aprox.)
+     */
+    private void sampleAndPushMetrics() {
+        if (operativeSystem == null || graphicsCharts == null) return;
+
+        int terminatedNow;
+        int completedSinceLast;
+        double cpuUtilSample;
+        double fairnessSample = 1.0;
+        double avgResponse = 0.0;
+
+        synchronized (operativeSystem) {
+            // throughput
+            Lista term = operativeSystem.getTerminatedProcessList();
+            terminatedNow = (term == null) ? 0 : term.count();
+            completedSinceLast = terminatedNow - prevTerminatedCount;
+            if (completedSinceLast < 0) completedSinceLast = 0; // safety
+            prevTerminatedCount = terminatedNow;
+
+            // CPU busy sample: 1 if there is an active running process, else 0
+            var active = operativeSystem.getDispatcher().getActiveProcess(operativeSystem.getProcessList());
+            int busyThisTick = (active != null) ? 1 : 0;
+            totalTicks++;
+            busyTicks += busyThisTick;
+            cpuUtilSample = totalTicks > 0 ? ((double) busyTicks) / ((double) totalTicks) : 0.0;
+
+            // fairness & avg response: use terminated processes' totalTimeSpent
+            int n = (term == null) ? 0 : term.count();
+            if (n > 0) {
+                // compute sum and sumsq using primitive accumulation
+                double sum = 0.0;
+                double sumsq = 0.0;
+                int idx = 0;
+                while (idx < n) {
+                    Object o = term.get(idx);
+                    if (o instanceof Proceso) {
+                        Proceso p = (Proceso) o;
+                        double t = (double) p.getTotalTimeSpent();
+                        sum += t;
+                        sumsq += t * t;
+                    }
+                    idx++;
+                }
+                avgResponse = n > 0 ? (sum / n) : 0.0;
+                if (sumsq == 0.0) {
+                    fairnessSample = 1.0;
+                } else {
+                    // Jain's index: (sum^2) / (n * sumsq)
+                    fairnessSample = (sum * sum) / ((double) n * sumsq);
+                    // clamp 0..1
+                    if (fairnessSample < 0.0) fairnessSample = 0.0;
+                    if (fairnessSample > 1.0) fairnessSample = 1.0;
+                }
+            } else {
+                fairnessSample = 1.0;
+                avgResponse = 0.0;
+            }
+        }
+
+        // throughput (completed per tick) - pass as int
+        graphicsCharts.addSample(completedSinceLast, cpuUtilSample, fairnessSample, avgResponse);
+    }
+    
     private void setupScrollContainers() {
         // Use FlowLayout left-aligned so panels are placed side-by-side and aligned left
         readyContainer = new javax.swing.JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
@@ -1054,7 +1142,7 @@ public class Interface1 extends javax.swing.JFrame {
             .addComponent(selection)
         );
         layout.setVerticalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addComponent(selection, GroupLayout.DEFAULT_SIZE, 724, Short.MAX_VALUE)
+            .addComponent(selection)
         );
 
         pack();

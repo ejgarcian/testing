@@ -343,6 +343,7 @@ public class Interface1 extends javax.swing.JFrame {
         
         Lista aux = operativeSystem.getProcessList();
         aux.add(process);
+        
         operativeSystem.setProcessList(aux);
         /*
         System.out.println(operativeSystem.getReadyQueue().getCount());
@@ -440,13 +441,24 @@ public class Interface1 extends javax.swing.JFrame {
     */
     private void updateActualProcess() {
         if (show_actual == null) return; // defensive
-        // printListProcess() returns a String (list of process names). If it returns null, guard it.
+
         String txt = "";
-        
-        System.out.println(operativeSystem.getProcessList().count());
-        if (operativeSystem != null && operativeSystem.getProcessList().count() > 0) {
-            txt = operativeSystem.getDispatcher().getActiveProcess(operativeSystem.getProcessList()).getPcb().getName(); //No devuelve el valor correcto
-            if (txt == null) txt = "";
+        try {
+            if (operativeSystem != null && operativeSystem.getProcessList().count() > 0) {
+                Proceso active = operativeSystem.getDispatcher().getActiveProcess(operativeSystem.getProcessList());
+                if (active != null && active.getPcb() != null) {
+                    PCB pcb = active.getPcb();
+                    String name = pcb.getName();
+                    txt = name == null ? "" : name;
+                } else {
+                    // No active process currently
+                    txt = "";
+                }
+            }
+        } catch (Exception ex) {
+            // avoid exceptions killing the EDT — show blank and log the problem
+            System.err.println("updateActualProcess error: " + ex);
+            txt = "";
         }
         show_actual.setText(txt);
         show_actual.revalidate();

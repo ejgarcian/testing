@@ -46,19 +46,19 @@ public class Dispatcher {
     }
     
     public Proceso getActiveProcess(Lista procesos){
-        int i = 0;
-        Proceso procesoAux = null;
-        while (i < procesos.count()){
-            procesoAux = (Proceso) procesos.get(i);
-           // System.out.println("proceso aux running?: " + procesoAux.getPcb().getStatus());
-            if (procesoAux.getPcb().getStatus() == "running"){
-                procesoAux = (Proceso) procesos.get(i);
-                break;
-            } else {
-                i++;
-            } 
+        if (procesos == null) return null;
+        int n = procesos.count();
+        for (int i = 0; i < n; i++) {
+            Object o = procesos.get(i);
+            if (!(o instanceof Proceso)) continue;
+            Proceso p = (Proceso) o;
+            PCB pcb = p.getPcb();
+            if (pcb == null) continue;
+            // use .equals to compare string content (safer than ==)
+            if ("running".equals(pcb.getStatus())) {
+                return p;
+            }
         }
-        
-        return (Proceso) procesoAux;
+        return null;
     }
 }

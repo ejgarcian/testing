@@ -4,9 +4,7 @@ private void updateActualProcess() {
 
     String txt = "";
     try {
-        // use read lock to get a consistent snapshot
-        operativeSystem.readLock().lock();
-        try {
+        synchronized (operativeSystem) {
             if (operativeSystem != null && operativeSystem.getProcessList().count() > 0) {
                 Proceso active = operativeSystem.getDispatcher().getActiveProcess(operativeSystem.getProcessList());
                 if (active != null && active.getPcb() != null) {
@@ -17,13 +15,12 @@ private void updateActualProcess() {
                     txt = "";
                 }
             }
-        } finally {
-            operativeSystem.readLock().unlock();
         }
     } catch (Exception ex) {
         System.err.println("updateActualProcess error: " + ex);
         txt = "";
     }
+    // This must run on the EDT; if already called by Swing Timer / invokeLater it's fine.
     show_actual.setText(txt);
     show_actual.revalidate();
     show_actual.repaint();
@@ -33,17 +30,14 @@ private void updateActualProcess() {
 private void startUiRefreshTimer() {
     if (uiRefreshTimer != null && uiRefreshTimer.isRunning()) return;
     uiRefreshTimer = new javax.swing.Timer(300, e -> {
-        // take a small read-lock snapshot:
-        operativeSystem.readLock().lock();
-        try {
+        // Take a short synchronized snapshot of the model
+        synchronized (operativeSystem) {
             refreshReadyList(operativeSystem.getReadyQueue());
             refreshBlockedList(operativeSystem.getBlockedQueue());
             refreshSuspendedReadyList(operativeSystem.getSuspendedReadyQueue());
             refreshSuspendedBlockedList(operativeSystem.getSuspendedBlockedQueue());
             updateTerminatedArea();
             updateActualProcess();
-        } finally {
-            operativeSystem.readLock().unlock();
         }
     });
     uiRefreshTimer.setCoalesce(true);

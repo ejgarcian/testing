@@ -53,19 +53,31 @@ public class JsonManager {
         }
     }
     
+    public void setProcessesFromArray(PData[] array) {
+        
+    }
+    
     // --- Creación de Configuración por Defecto (usando arrays) ---
     private static Config createDefaultConfig() {
-        int cycleDuration = 50; 
-        
-        // Se inicializa el array directamente
+        int cycleDuration = 20;
+
+        // Define default processes
         PData[] defaultProcesses = new PData[] {
-            // name, bound, instructions, ioCicles, satisfyCicles, deviceToUse, priority
             new PData("P_CPU_1", "CPU", 10, 0, 0, 0, 1),
             new PData("P_IO_1", "I/O", 25, 100, 50, 2, 2),
             new PData("P_IO_2", "I/O", 10, 200, 75, 1, 3),
             new PData("P_CPU_2", "CPU", 20, 0, 0, 0, 1)
         };
+
+        /*
+        // Create config with initial capacity
+        Config config = new Config(cycleDuration, defaultProcesses);
         
-        return new Config(cycleDuration, defaultProcesses);
+        // Add each PData to the config's process list
+        for (PData pd : defaultProcesses) {
+            config.addProcess(pd);
+        }
+*/
+        return null;
     }
 }

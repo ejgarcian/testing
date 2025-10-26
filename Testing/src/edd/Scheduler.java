@@ -33,7 +33,11 @@ public class Scheduler {
         if (readyQueue.getCount() > 0){
 
             var processToActivate = readyQueue.dequeue();
-            PCB pcbOfActiveProcess = ((PCB)processToActivate);
+            if (!(processToActivate instanceof PCB)) {
+                // defensive: if the queue didn't contain a PCB, nothing to do
+                return;
+            }
+            PCB pcbOfActiveProcess = (PCB) processToActivate;
             
             // verificar si el proceso ya está activado y si no lo está, activarlo   
             if (!"running".equals(pcbOfActiveProcess.getStatus())){
@@ -41,21 +45,27 @@ public class Scheduler {
             }
             
             Proceso toRun = dispatcher.getActiveProcess(getProcessList());
+            if (toRun == null) return;
             
-            while("running".equals(toRun.getPcb().getStatus())) {
+            while(toRun != null && "running".equals(toRun.getPcb().getStatus())) {
                 // honor interruption from the scheduler thread (UI changed planification)
                 if (Thread.currentThread().isInterrupted()) return;
 
                 System.out.println("is running");
                 if (toRun.getTimeSpent() >= quantum || toRun.getProcessingTime() <= toRun.getTotalTimeSpent()){
                     dispatcher.deactivate(toRun);   // running --> ready
+                    // after deactivate the PCB status should be "ready"
                 }
             
                 if ("I/O Bound".equals(toRun.getBound()) && toRun.getPcb().getPc()-1 == toRun.getInterruptAt()){
+                    // transition to blocked: set status explicitly, then enqueue only if status is "blocked"
                     toRun.getPcb().setStatus("blocked");
-                    blockedQueue.enqueue(toRun.getPcb());
+                    if ("blocked".equals(toRun.getPcb().getStatus())) {
+                        blockedQueue.enqueue(toRun.getPcb());
+                    }
                     try {
                         toRun.sleep(toRun.getIoCicles()*1000);
+                        System.out.println("ssssswqdwqdq");
                         accessDevice(toRun, dispatcher, blockedQueue);
                     } 
                     catch(InterruptedException e) {
@@ -73,11 +83,19 @@ public class Scheduler {
                      return;
                 }
             }
+
+            // When the process finished its quantum / execution we must enqueue it back
+            // only if its PCB status is "ready" (or handle termination).
             if (toRun.getProcessingTime() <= toRun.getTotalTimeSpent()) {
                 toRun.getPcb().setStatus("terminated");
                 terminatedProcessList.add(toRun);
             } else {
-                readyQueue.enqueue(toRun.getPcb());
+                if ("ready".equals(toRun.getPcb().getStatus())) {
+                    readyQueue.enqueue(toRun.getPcb());
+                } else {
+                    // If it's not ready (for example blocked), do not enqueue into ready queue.
+                    System.out.println("Not enqueuing to ready queue because status is: " + toRun.getPcb().getStatus());
+                }
             }
         }
     }
@@ -683,6 +701,7 @@ public class Scheduler {
         int i = 0;
         Device aux = null;
         while (i < deviceTable.count()){
+            System.out.println("entroo");
             if (Thread.currentThread().isInterrupted()) return;
             Object o = deviceTable.get(i);
             if (!(o instanceof Device)) { i++; continue; }

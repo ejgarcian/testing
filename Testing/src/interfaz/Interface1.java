@@ -256,6 +256,7 @@ public class Interface1 extends javax.swing.JFrame {
     public void refreshBlockedList(Cola blockedQueue) {
         refreshContainerFromQueue(blockedQueue, blockedContainer, jScrollPane5);
         System.out.println("Blocked: "+blockedQueue.getCount());
+        System.out.println("Procesos: "+operativeSystem.getProcessList().count());
     }
 
     public void refreshSuspendedReadyList(Cola suspendedReadyQueue) {

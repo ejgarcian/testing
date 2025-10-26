@@ -224,41 +224,26 @@ public class Scheduler {
     
     
     public void Feedback(int setQuantum, Cola readyQueue, Lista readyQueueList, Dispatcher dispatcher, Cola blockedQueue, Lista terminatedProcessList) {
+        System.out.println("sssssssswqdqwfqfqfqfqfq");
         int quantum = setQuantum;
         if (Thread.currentThread().isInterrupted()) return;
 
         PCB processToActivate = null;
-        Cola chosenBucket = null;
-
         // Buscar el primer bucket no vacío (nivel de mayor prioridad)
-        for (int i = 0; i < readyQueueList.count(); i++) {
-            Object bucketObj = readyQueueList.get(i);
-            if (!(bucketObj instanceof Cola)) continue;
-            Cola bucket = (Cola) bucketObj;
-            if (bucket.getCount() > 0) {
-                Object dequeued = bucket.dequeue();
-                if (dequeued == null) continue;
-                // dequeued puede ser PCB (o Proceso). Normalizar
-                if (dequeued instanceof Proceso) {
-                    processToActivate = ((Proceso)dequeued).getPcb();
-                } else if (dequeued instanceof PCB) {
-                    processToActivate = (PCB)dequeued;
-                } else {
-                    continue;
-                }
-                chosenBucket = bucket;
+        int i = 0;
+        while (i < readyQueueList.count()){
+            if (((Cola)readyQueueList.get(i)).getCount() > 0){
+                System.out.println("activando");
+                processToActivate = (PCB)(((Cola)readyQueueList.get(i)).dequeue());
+                System.out.println("id del proceso" + processToActivate.getId());
+                dispatcher.activate(processToActivate, processList);
+                System.out.println("status del pta" + processToActivate.getStatus());
+                readyQueue.getQueue().remove(readyQueue.getQueue().indexOf(processToActivate));
                 break;
             }
+            i++;
         }
-
-        if (processToActivate == null) return;
-
-        // Activar el proceso seleccionado
-        dispatcher.activate(processToActivate, processList);
-
-        // Eliminar cualquier referencia residual en la cola global
-        readyQueue.removeValue(processToActivate);
-
+        
         Proceso toRun = dispatcher.getActiveProcess(processList);
         if (toRun == null) return;
         if (Thread.currentThread().isInterrupted()) return;
@@ -300,6 +285,10 @@ public class Scheduler {
             int timesIn = toRun.getPcb().getTimesIn();
             if (timesIn < readyQueueList.count()) {
                 Object obj = readyQueueList.get(timesIn);
+                ((Cola) obj).enqueue(toRun.getPcb());
+                readyQueue.enqueue(toRun.getPcb());
+                
+                /*
                 if (obj instanceof Cola) {
                     ((Cola) obj).enqueue(toRun.getPcb());
                     readyQueue.enqueue(toRun.getPcb());
@@ -308,10 +297,12 @@ public class Scheduler {
                     readyQueueList.add(aux);
                     aux.enqueue(toRun.getPcb());
                     readyQueue.enqueue(toRun.getPcb());
-                }
+                }*/
+                
             } else {
                 Cola aux = new Cola();
                 readyQueueList.add(aux);
+                System.out.println(timesIn);
                 ((Cola) readyQueueList.get(timesIn)).enqueue(toRun.getPcb());
                 readyQueue.enqueue(toRun.getPcb());
             }

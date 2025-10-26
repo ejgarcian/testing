@@ -475,7 +475,7 @@ public class Interface1 extends javax.swing.JFrame {
 
     private void startSchedulerBackground() {
         int selected = planification; // read atomic/volatile if planification can change concurrently
-        System.out.println(selected);
+        //System.out.println(selected);
         if (operativeSystem.getReadyQueue().getCount() > 0) {
             switch (selected) {
                 case 0 -> {
@@ -505,7 +505,7 @@ public class Interface1 extends javax.swing.JFrame {
         if (schedulerThread != null && schedulerThread.isAlive()) return;
         schedulerThread = new Thread(() -> {
             // run until interrupted (dispose() will interrupt)
-            System.out.println("ssss");
+            //System.out.println("ssss");
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     startSchedulerBackground();
